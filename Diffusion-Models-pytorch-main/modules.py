@@ -51,8 +51,9 @@ class SelfAttention(nn.Module):
         )
 
     def forward(self, x):
-        size = x.shape[-1]
-        x = x.view(-1, self.channels, size * size).swapaxes(1, 2)
+        size1 = x.shape[2]
+        size2 = x.shape[3]
+        x = x.view(-1, self.channels, size1 * size2).swapaxes(1, 2)
         x_ln = self.ln(x)
         attention_value, _ = self.mha(x_ln, x_ln, x_ln)
         attention_value = attention_value + x
@@ -171,9 +172,13 @@ class UNet(nn.Module):
         return pos_enc
 
     def unet_forwad(self, x, t):
+        print(x.shape, 'X shape', t.shape, 'T shape')
         x1 = self.inc(x)
+        print(x1.shape, 'X1 shape', t.shape, 'T shape')
         x2 = self.down1(x1, t)
+        print(x2.shape, "X2 shape")
         x2 = self.sa1(x2)
+        print(x2.shape, "AFTER SA")
         x3 = self.down2(x2, t)
         x3 = self.sa2(x3)
         x4 = self.down3(x3, t)
@@ -200,18 +205,24 @@ class UNet(nn.Module):
 
 
 class UNet_conditional(UNet):
-    def __init__(self, c_in=3, c_out=3, time_dim=256, max_embed=100, **kwargs):
+    def __init__(self, c_in=3, c_out=3, time_dim=256, num_classes=None, max_embed=100, **kwargs):
         super().__init__(c_in, c_out, time_dim, **kwargs)
         self.label_emb = T5_embed() # Change for whatever embedding function you wish to use
+        if num_classes is not None:
+            self.cap_emb = nn.Linear(num_classes, time_dim)
         
 
     def forward(self, x, t, y=None):
         t = t.unsqueeze(-1)
+        print(self.time_dim)
         t = self.pos_encoding(t, self.time_dim)
-        
-        cap = y
+        print(t.shape, 'T shape')
+        print(x.shape, "FIRST X SHAPE")
         if y is not None:
+            cap = self.cap_emb(y)
+            print(cap.shape, "CAP SHAPE")
             t += cap
+            print(t.shape, "T ADDITION")
         return self.unet_forwad(x, t)
     
 class CLIP_embed(nn.Module):

@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-import wandb
+
 from ddpm_conditional import Diffusion
 
 
@@ -12,7 +12,7 @@ config = SimpleNamespace(
     epochs = 25,
     noise_steps=1000,
     seed = 42,
-    batch_size = 128,
+    batch_size = 1,
     img_size = 32,
     num_classes = 10,
     train_folder = "train",
@@ -27,6 +27,5 @@ config = SimpleNamespace(
 
 diff = Diffusion(noise_steps=config.noise_steps , img_size=config.img_size)
 
-with wandb.init(project="train_sd", group="train", config=config):
-    diff.prepare(config)
-    diff.fit(config)
+diff.prepare(config)
+diff.fit(config)

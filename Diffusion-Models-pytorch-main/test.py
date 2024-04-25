@@ -1,7 +1,7 @@
 from modules import CLIP_embed, T5_embed
 from coco_dataloader import get_train_data, get_val_data
 
-train = get_train_data()
+train = get_val_data()
 image, cap = train[3]
 print(cap)
 trans = CLIP_embed()
