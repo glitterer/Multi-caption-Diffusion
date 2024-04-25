@@ -4,7 +4,6 @@ from types import SimpleNamespace
 from ddpm_conditional import Diffusion
 
 
-# Trains a conditional diffusion model on CIFAR10
 # This is a very simple example, for more advanced training, see `ddp_conditional.py`
 
 config = SimpleNamespace(    

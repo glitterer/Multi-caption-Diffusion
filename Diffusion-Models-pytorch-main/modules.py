@@ -58,7 +58,7 @@ class SelfAttention(nn.Module):
         attention_value, _ = self.mha(x_ln, x_ln, x_ln)
         attention_value = attention_value + x
         attention_value = self.ff_self(attention_value) + attention_value
-        return attention_value.swapaxes(2, 1).view(-1, self.channels, size, size)
+        return attention_value.swapaxes(2, 1).view(-1, self.channels, size1, size2)
 
 
 class DoubleConv(nn.Module):
@@ -172,13 +172,9 @@ class UNet(nn.Module):
         return pos_enc
 
     def unet_forwad(self, x, t):
-        print(x.shape, 'X shape', t.shape, 'T shape')
         x1 = self.inc(x)
-        print(x1.shape, 'X1 shape', t.shape, 'T shape')
         x2 = self.down1(x1, t)
-        print(x2.shape, "X2 shape")
         x2 = self.sa1(x2)
-        print(x2.shape, "AFTER SA")
         x3 = self.down2(x2, t)
         x3 = self.sa2(x3)
         x4 = self.down3(x3, t)
@@ -214,15 +210,11 @@ class UNet_conditional(UNet):
 
     def forward(self, x, t, y=None):
         t = t.unsqueeze(-1)
-        print(self.time_dim)
         t = self.pos_encoding(t, self.time_dim)
-        print(t.shape, 'T shape')
-        print(x.shape, "FIRST X SHAPE")
+        
         if y is not None:
             cap = self.cap_emb(y)
-            print(cap.shape, "CAP SHAPE")
             t += cap
-            print(t.shape, "T ADDITION")
         return self.unet_forwad(x, t)
     
 class CLIP_embed(nn.Module):

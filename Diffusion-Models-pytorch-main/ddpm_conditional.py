@@ -10,14 +10,15 @@ from types import SimpleNamespace
 from contextlib import nullcontext
 
 import torch
+import matplotlib.pyplot as plt
+import torchvision
 from torch import optim
 import torch.nn as nn
 import numpy as np
 from fastprogress import progress_bar
 
-import wandb
 from utils import *
-from modules import UNet_conditional, EMA, T5_embed
+from modules import UNet_conditional, EMA, T5_embed, CLIP_embed
 from coco_dataloader import get_train_data, get_val_data
 
 
@@ -54,6 +55,7 @@ class Diffusion:
         self.alpha_hat = torch.cumprod(self.alpha, dim=0)
 
         self.img_size = img_size
+        self.resize = torchvision.transforms.Resize((48,64))
         self.model = UNet_conditional(c_in, c_out, num_classes = num_classes, **kwargs).to(device)
         self.ema_model = copy.deepcopy(self.model).eval().requires_grad_(False)
         self.device = device
@@ -74,7 +76,7 @@ class Diffusion:
         
         Ɛ = torch.randn_like(x)
         noisy_img = sqrt_alpha_hat * x + sqrt_one_minus_alpha_hat * Ɛ
-        print(noisy_img.shape, "noisy shape")
+        
         return noisy_img, Ɛ
     
     @torch.inference_mode()
@@ -118,12 +120,13 @@ class Diffusion:
         pbar = progress_bar(self.train_dataloader)
         for i, (images, labels) in enumerate(pbar):
             with torch.autocast("cuda") and (torch.inference_mode() if not train else torch.enable_grad()):
+                images = self.resize(images)
                 images = images.type(torch.FloatTensor).to(self.device)
-                print(images.shape, "IMAGE SHAPE")
+                
                 labels = self.cap_enc((labels[0])).to(self.device)
                 t = self.sample_timesteps(images.shape[0]).to(self.device)
                 x_t, noise = self.noise_images(images, t)
-                print(x_t.shape, 'x_t shape')
+                
                 if np.random.random() < 0.15:
                     labels = None
                 predicted_noise = self.model(x_t, t, labels)
@@ -131,20 +134,22 @@ class Diffusion:
                 avg_loss += loss
             if train:
                 self.train_step(loss)
-                print("train_mse " + loss.item() + " learning_rate "+ self.scheduler.get_last_lr()[0])
+                print("train_mse " + str(loss.item()) + " learning_rate "+ str(self.scheduler.get_last_lr()[0]))
             pbar.comment = f"MSE={loss.item():2.3f}"        
         return avg_loss.mean().item()
 
-    # def log_images(self):
-    #     "Log images to wandb and save them to disk"
-    #     labels = torch.arange(self.num_classes).long().to(self.device)
-    #     sampled_images = self.sample(use_ema=False, labels=labels)
-    #     wandb.log({"sampled_images":     [wandb.Image(img.permute(1,2,0).squeeze().cpu().numpy()) for img in sampled_images]})
-
-    #     # EMA model sampling
-    #     ema_sampled_images = self.sample(use_ema=True, labels=labels)
-    #     plot_images(sampled_images)  #to display on jupyter if available
-    #     wandb.log({"ema_sampled_images": [wandb.Image(img.permute(1,2,0).squeeze().cpu().numpy()) for img in ema_sampled_images]})
+    def log_images(self):
+        "Log images to wandb and save them to disk"
+        labels1 = self.cap_enc('A zebra wearing sunglasses').to(self.device)
+        labels2 = self.cap_enc('A dish of food').to(self.device)
+        labels = torch.cat([labels1, labels2])
+        labels = labels.reshape((2, 20))
+        sampled_images = self.sample(use_ema=False, labels=labels)
+        sampled_images = sampled_images.permute((0, 2, 3, 1))
+        sampled_images = sampled_images.cpu().detach().numpy()
+        plt.imsave('img1.png', sampled_images[0])
+        plt.imsave('img2.png',sampled_images[1])
+        
 
     def load(self, model_cpkt_path, model_ckpt="ckpt.pt", ema_model_ckpt="ema_ckpt.pt"):
         self.model.load_state_dict(torch.load(os.path.join(model_cpkt_path, model_ckpt)))
@@ -161,11 +166,10 @@ class Diffusion:
 
     def prepare(self, args):
         mk_folders(args.run_name)
-        self.train_dataloader = get_train_data()
-        self.val_dataloader = get_val_data()
+        self.train_dataloader = get_train_data(config.batch_size)
+        self.val_dataloader = get_val_data(config.batch_size)
         self.optimizer = optim.AdamW(self.model.parameters(), lr=args.lr, eps=1e-5)
-        self.scheduler = optim.lr_scheduler.OneCycleLR(self.optimizer, max_lr=args.lr, 
-                                                 steps_per_epoch=len(self.train_dataloader), epochs=args.epochs)
+        self.scheduler = optim.lr_scheduler.OneCycleLR(self.optimizer, max_lr=args.lr, steps_per_epoch=len(self.train_dataloader), epochs=args.epochs)
         self.mse = nn.MSELoss()
         self.ema = EMA(0.995)
         self.scaler = torch.cuda.amp.GradScaler()
@@ -181,8 +185,7 @@ class Diffusion:
                 print("Val_mse", avg_loss)
                 # wandb.log({"val_mse": avg_loss})
             
-            # log predicitons
-            if epoch % args.log_every_epoch == 0:
+            if epoch % 2 == 0:
                 self.log_images()
 
         # save model
