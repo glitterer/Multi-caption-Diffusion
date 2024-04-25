@@ -75,7 +75,7 @@ return: 'text_embedding' - Returns a list of text encodings of the inputed capti
 '''
 def t5_embedding(caption):
 
-    print("T5 TEXT EMBEDING")
+    # print("T5 TEXT EMBEDING")
 
     # Load the pretrained T5 model and T5 tokenizer
     tokenizer = AutoTokenizer.from_pretrained("google-t5/t5-small")
@@ -93,4 +93,4 @@ def t5_embedding(caption):
         last_hidden_states = model(input_ids=input_ids).last_hidden_state
         text_embedding.append(last_hidden_states)
 
-    return text_embedding
+    return text_embedding[0]

@@ -17,8 +17,9 @@ import torch.nn as nn
 import numpy as np
 from fastprogress import progress_bar
 
+from Embedding import clip_text_embedding, clip_image_embedding, t5_embedding
 from utils import *
-from modules import UNet_conditional, EMA, T5_embed, CLIP_embed
+from modules import UNet_conditional, EMA
 from coco_dataloader import get_train_data, get_val_data
 
 
@@ -29,7 +30,7 @@ config = SimpleNamespace(
     seed = 42,
     batch_size = 1,
     img_size = 64,
-    num_classes = 10,
+    text_embed_length = 10,
     train_folder = "train",
     val_folder = "test",
     device = "cuda",
@@ -45,7 +46,7 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=log
 
 
 class Diffusion:
-    def __init__(self, noise_steps=1000, beta_start=1e-4, beta_end=0.02, img_size=640, num_classes=20, c_in=3, c_out=3, device="cuda", **kwargs):
+    def __init__(self, noise_steps=1000, beta_start=1e-4, beta_end=0.02, img_size=640, text_embed_length=512, c_in=3, c_out=3, device="cuda", **kwargs):
         self.noise_steps = noise_steps
         self.beta_start = beta_start
         self.beta_end = beta_end
@@ -56,12 +57,12 @@ class Diffusion:
 
         self.img_size = img_size
         self.resize = torchvision.transforms.Resize((48,64))
-        self.model = UNet_conditional(c_in, c_out, num_classes = num_classes, **kwargs).to(device)
+        self.model = UNet_conditional(c_in, c_out, text_embed_length = text_embed_length, **kwargs).to(device)
         self.ema_model = copy.deepcopy(self.model).eval().requires_grad_(False)
         self.device = device
         self.c_in = c_in
-        self.num_classes = num_classes
-        self.cap_enc = T5_embed()
+        self.text_embed_length = text_embed_length
+        self.cap_enc = t5_embedding
 
     def prepare_noise_schedule(self):
         return torch.linspace(self.beta_start, self.beta_end, self.noise_steps)
@@ -123,7 +124,8 @@ class Diffusion:
                 images = self.resize(images)
                 images = images.type(torch.FloatTensor).to(self.device)
                 
-                labels = self.cap_enc((labels[0])).to(self.device)
+                labels = self.cap_enc([labels[0]]).to(self.device)
+                print(labels.shape, "LABELS")
                 t = self.sample_timesteps(images.shape[0]).to(self.device)
                 x_t, noise = self.noise_images(images, t)
                 
@@ -139,7 +141,7 @@ class Diffusion:
         return avg_loss.mean().item()
 
     def log_images(self):
-        "Log images to wandb and save them to disk"
+        "Log images to save them to disk"
         labels1 = self.cap_enc('A zebra wearing sunglasses').to(self.device)
         labels2 = self.cap_enc('A dish of food').to(self.device)
         labels = torch.cat([labels1, labels2])
@@ -201,7 +203,7 @@ def parse_args(config):
     parser.add_argument('--seed', type=int, default=config.seed, help='random seed')
     parser.add_argument('--batch_size', type=int, default=config.batch_size, help='batch size')
     parser.add_argument('--img_size', type=int, default=config.img_size, help='image size')
-    parser.add_argument('--num_classes', type=int, default=config.num_classes, help='number of classes')
+    parser.add_argument('--text_embed_length', type=int, default=config.text_embed_length, help='number of classes')
     parser.add_argument('--dataset_path', type=str, default=config.dataset_path, help='path to dataset')
     parser.add_argument('--device', type=str, default=config.device, help='device')
     parser.add_argument('--lr', type=float, default=config.lr, help='learning rate')
@@ -220,6 +222,6 @@ if __name__ == '__main__':
     ## seed everything
     set_seed(config.seed)
 
-    diffuser = Diffusion(config.noise_steps, img_size=config.img_size, num_classes=config.num_classes)
+    diffuser = Diffusion(config.noise_steps, img_size=config.img_size, text_embed_length=config.text_embed_length)
     diffuser.prepare(config)
     diffuser.fit(config)
