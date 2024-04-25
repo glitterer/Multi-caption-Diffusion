@@ -83,7 +83,7 @@ class DoubleConv(nn.Module):
 
 
 class Down(nn.Module):
-    def __init__(self, in_channels, out_channels, emb_dim=256):
+    def __init__(self, in_channels, out_channels, emb_dim=512):
         super().__init__()
         self.maxpool_conv = nn.Sequential(
             nn.MaxPool2d(2),
@@ -106,7 +106,7 @@ class Down(nn.Module):
 
 
 class Up(nn.Module):
-    def __init__(self, in_channels, out_channels, emb_dim=256):
+    def __init__(self, in_channels, out_channels, emb_dim=512):
         super().__init__()
 
         self.up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
@@ -132,7 +132,7 @@ class Up(nn.Module):
 
 
 class UNet(nn.Module):
-    def __init__(self, c_in=3, c_out=3, time_dim=256, remove_deep_conv=False):
+    def __init__(self, c_in=3, c_out=3, time_dim=512, remove_deep_conv=False):
         super().__init__()
         self.time_dim = time_dim
         self.remove_deep_conv = remove_deep_conv
@@ -201,52 +201,16 @@ class UNet(nn.Module):
 
 
 class UNet_conditional(UNet):
-    def __init__(self, c_in=3, c_out=3, time_dim=256, num_classes=None, max_embed=100, **kwargs):
+    def __init__(self, c_in=3, c_out=3, time_dim=512, text_embed_length=None, max_embed=100, **kwargs):
         super().__init__(c_in, c_out, time_dim, **kwargs)
-        self.label_emb = T5_embed() # Change for whatever embedding function you wish to use
-        if num_classes is not None:
-            self.cap_emb = nn.Linear(num_classes, time_dim)
-        
 
-    def forward(self, x, t, y=None):
+    # P(x|t,y)_ x:image, t: time embedding, y: caption embedding
+    def forward(self, x, t, y=None): 
         t = t.unsqueeze(-1)
         t = self.pos_encoding(t, self.time_dim)
         
-        if y is not None:
-            cap = self.cap_emb(y)
-            t += cap
+        if y is not None: # unconditioned P(x|t)
+            
+            t += y
         return self.unet_forwad(x, t)
     
-class CLIP_embed(nn.Module):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        MERGES_FILE = "http://download.pytorch.org/models/text/clip_merges.bpe"
-        ENCODER_FILE = "http://download.pytorch.org/models/text/clip_encoder.json"
-        self.tokenizer = CLIPTokenizer(merges_path=MERGES_FILE, encoder_json_path=ENCODER_FILE)
-    
-    def forward(self, caption:torch.Tensor):
-        embedding = self.tokenizer(caption)
-        return embedding
-    
-class T5_embed(nn.Module):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        padding_idx = 0
-        eos_idx = 1
-        max_seq_len = 20
-        t5_sp_model_path = "https://download.pytorch.org/models/text/t5_tokenizer_base.model"
-
-        self.transform = T5Transform(
-            sp_model_path=t5_sp_model_path,
-            max_seq_len=max_seq_len,
-            eos_idx=eos_idx,
-            padding_idx=padding_idx,
-        )
-    
-    def forward(self, caption):
-        tokens = self.transform(caption)
-        pad_width = 20 - len(tokens)
-        if pad_width > 0:
-            z = torch.zeros(pad_width)
-            tokens = torch.cat([tokens, z])
-        return tokens

@@ -62,7 +62,7 @@ class Diffusion:
         self.device = device
         self.c_in = c_in
         self.text_embed_length = text_embed_length
-        self.cap_enc = t5_embedding
+        self.cap_enc = clip_text_embedding
 
     def prepare_noise_schedule(self):
         return torch.linspace(self.beta_start, self.beta_end, self.noise_steps)
@@ -125,7 +125,6 @@ class Diffusion:
                 images = images.type(torch.FloatTensor).to(self.device)
                 
                 labels = self.cap_enc([labels[0]]).to(self.device)
-                print(labels.shape, "LABELS")
                 t = self.sample_timesteps(images.shape[0]).to(self.device)
                 x_t, noise = self.noise_images(images, t)
                 
@@ -142,10 +141,10 @@ class Diffusion:
 
     def log_images(self):
         "Log images to save them to disk"
-        labels1 = self.cap_enc('A zebra wearing sunglasses').to(self.device)
-        labels2 = self.cap_enc('A dish of food').to(self.device)
+        labels1 = self.cap_enc(['A zebra wearing sunglasses']).to(self.device)
+        labels2 = self.cap_enc(['A dish of food']).to(self.device)
         labels = torch.cat([labels1, labels2])
-        labels = labels.reshape((2, 20))
+        labels = labels.reshape((2, 512))
         sampled_images = self.sample(use_ema=False, labels=labels)
         sampled_images = sampled_images.permute((0, 2, 3, 1))
         sampled_images = sampled_images.cpu().detach().numpy()
