@@ -13,6 +13,6 @@ https://devpost.com/software/clipping-a-diffusion-model?ref_content=user-portfol
 4. http://images.cocodataset.org/annotations/annotations_trainval2014.zip
 5. http://images.cocodataset.org/annotations/image_info_test2014.zip
 
-## Library
+## Libraries
 https://pypi.org/project/pycocotools/
 https://github.com/cocodataset/cocoapi/tree/master/PythonAPI
