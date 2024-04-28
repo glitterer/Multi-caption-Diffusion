@@ -7,6 +7,7 @@ for image, cap in train:
     T5_em = t5_embedding
     out1 = trans(cap[0])
     # t5_1 = T5_em(cap[0])
+    print(image)
     print(cap[0])
     print(out1.shape)
     # print(t5_1.shape)
