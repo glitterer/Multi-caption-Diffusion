@@ -24,13 +24,13 @@ from coco_dataloader import get_train_data, get_val_data
 
 
 config = SimpleNamespace(    
-    run_name = "DDPM_conditional",
+    run_name = "Clip_text_ddpm",
     epochs = 1,
     noise_steps=1000,
     seed = 42,
     batch_size = 1,
-    img_size = 64,
-    text_embed_length = 10,
+    img_size = 128,
+    text_embed_length = 512,
     train_folder = "train",
     val_folder = "test",
     device = "cuda",
@@ -46,7 +46,7 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=log
 
 
 class Diffusion:
-    def __init__(self, noise_steps=1000, beta_start=1e-4, beta_end=0.02, img_size=640, text_embed_length=512, c_in=3, c_out=3, device="cuda", **kwargs):
+    def __init__(self, noise_steps=1000, beta_start=1e-4, beta_end=0.02, img_size1=128, img_size2=128, text_embed_length=512, c_in=3, c_out=3, device="cuda", **kwargs):
         self.noise_steps = noise_steps
         self.beta_start = beta_start
         self.beta_end = beta_end
@@ -55,8 +55,8 @@ class Diffusion:
         self.alpha = 1. - self.beta
         self.alpha_hat = torch.cumprod(self.alpha, dim=0)
 
-        self.img_size = img_size
-        self.resize = torchvision.transforms.Resize((48,64))
+        self.img_size1 = img_size1
+        self.img_size2 = img_size2
         self.model = UNet_conditional(c_in, c_out, text_embed_length = text_embed_length, **kwargs).to(device)
         self.ema_model = copy.deepcopy(self.model).eval().requires_grad_(False)
         self.device = device
@@ -87,7 +87,7 @@ class Diffusion:
         logging.info(f"Sampling {n} new images....")
         model.eval()
         with torch.inference_mode():
-            x = torch.randn((n, self.c_in, self.img_size, self.img_size)).to(self.device)
+            x = torch.randn((n, self.c_in, self.img_size1, self.img_size2)).to(self.device)
             for i in progress_bar(reversed(range(1, self.noise_steps)), total=self.noise_steps-1, leave=False):
                 t = (torch.ones(n) * i).long().to(self.device)
                 predicted_noise = model(x, t, labels)
@@ -121,7 +121,7 @@ class Diffusion:
         pbar = progress_bar(self.train_dataloader)
         for i, (images, labels) in enumerate(pbar):
             with torch.autocast("cuda") and (torch.inference_mode() if not train else torch.enable_grad()):
-                images = self.resize(images)
+                
                 images = images.type(torch.FloatTensor).to(self.device)
                 
                 labels = self.cap_enc([labels[0]]).to(self.device)
@@ -139,31 +139,29 @@ class Diffusion:
             pbar.comment = f"MSE={loss.item():2.3f}"        
         return avg_loss.mean().item()
 
-    def log_images(self):
+    def log_images(self, epoch):
         "Log images to save them to disk"
-        labels1 = self.cap_enc(['A zebra wearing sunglasses']).to(self.device)
-        labels2 = self.cap_enc(['A dish of food']).to(self.device)
+        labels1 = self.cap_enc(['A zebra walking on the street']).to(self.device)
+        labels2 = self.cap_enc(['A plate of food']).to(self.device)
         labels = torch.cat([labels1, labels2])
         labels = labels.reshape((2, 512))
         sampled_images = self.sample(use_ema=False, labels=labels)
         sampled_images = sampled_images.permute((0, 2, 3, 1))
         sampled_images = sampled_images.cpu().detach().numpy()
-        plt.imsave('img1.png', sampled_images[0])
-        plt.imsave('img2.png',sampled_images[1])
+        plt.imsave(f'img1_e{epoch}.png', sampled_images[0])
+        plt.imsave(f'img2_e{epoch}.png',sampled_images[1])
         
 
-    def load(self, model_cpkt_path, model_ckpt="ckpt.pt", ema_model_ckpt="ema_ckpt.pt"):
+    def load(self, model_cpkt_path, model_ckpt="checkpt_e10.pt", ema_model_ckpt="ema_checkpt_e10.pt"):
         self.model.load_state_dict(torch.load(os.path.join(model_cpkt_path, model_ckpt)))
         self.ema_model.load_state_dict(torch.load(os.path.join(model_cpkt_path, ema_model_ckpt)))
 
     def save_model(self, run_name, epoch=-1):
-        "Save model locally and on wandb"
-        torch.save(self.model.state_dict(), os.path.join("models", run_name, f"ckpt.pt"))
-        torch.save(self.ema_model.state_dict(), os.path.join("models", run_name, f"ema_ckpt.pt"))
-        torch.save(self.optimizer.state_dict(), os.path.join("models", run_name, f"optim.pt"))
-        # at = wandb.Artifact("model", type="model", description="Model weights for DDPM conditional", metadata={"epoch": epoch})
-        # at.add_dir(os.path.join("models", run_name))
-        # wandb.log_artifact(at)
+        "Save model locally"
+        torch.save(self.model.state_dict(), os.path.join("models", run_name, f"checkpt_e{epoch}.pt"))
+        torch.save(self.ema_model.state_dict(), os.path.join("models", run_name, f"ema_checkpt_e{epoch}.pt"))
+        torch.save(self.optimizer.state_dict(), os.path.join("models", run_name, f"optim_e{epoch}.pt"))
+        
 
     def prepare(self, args):
         mk_folders(args.run_name)
@@ -184,10 +182,12 @@ class Diffusion:
             if args.do_validation:
                 avg_loss = self.one_epoch(train=False)
                 print("Val_mse", avg_loss)
-                # wandb.log({"val_mse": avg_loss})
             
-            if epoch % 2 == 0:
-                self.log_images()
+            if epoch % 15 == 0:
+                self.log_images(epoch)
+            
+            if epoch % 10 == 0:
+                self.save_model(run_name=args.run_name, epoch=epoch)
 
         # save model
         self.save_model(run_name=args.run_name, epoch=epoch)

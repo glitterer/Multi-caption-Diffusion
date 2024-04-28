@@ -12,7 +12,7 @@ config = SimpleNamespace(
     noise_steps=1000,
     seed = 42,
     batch_size = 1,
-    img_size = 32,
+    img_size = 256,
     num_classes = 10,
     train_folder = "train",
     val_folder = "test",
@@ -24,7 +24,7 @@ config = SimpleNamespace(
     num_workers=10,
     lr = 5e-3)
 
-diff = Diffusion(noise_steps=config.noise_steps , img_size=config.img_size)
+diff = Diffusion(noise_steps=config.noise_steps , img_size1=config.img_size, img_size2=config.img_size)
 
 diff.prepare(config)
 diff.fit(config)
