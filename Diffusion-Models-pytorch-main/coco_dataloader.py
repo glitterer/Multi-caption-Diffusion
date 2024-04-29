@@ -1,11 +1,16 @@
+from typing import List
 import torchvision.datasets as dset
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 import os
 cwd = '/home/rdemello/MSCOCO'
 
+class CustomCocoCaptions(dset.CocoCaptions):
+    def _load_target(self, id: int) -> List[str]:
+        return super()._load_target(id)[:5]
+
 def get_train_data(batchsize:int):
-    train_data = dset.CocoCaptions(root = cwd+'/COCO2014trainimg/train2014',
+    train_data = CustomCocoCaptions(root = cwd+'/COCO2014trainimg/train2014',
                         annFile = cwd+'/COCO2014trainValCap/annotations/captions_train2014.json',
                         transform=transforms.Compose([transforms.ToTensor(),
                                                      transforms.Resize((64,64))]))
@@ -14,8 +19,9 @@ def get_train_data(batchsize:int):
     return train_dl
 
 def get_val_data(batchsize: int):
-    val_data = dset.CocoCaptions(root = cwd+'/COCO2014valimg/val2014',
+    val_data = CustomCocoCaptions(root = cwd+'/COCO2014valimg/val2014',
                         annFile = cwd+'/COCO2014trainValCap/annotations/captions_val2014.json',
-                        transform=transforms.PILToTensor())
+                        transform=transforms.Compose([transforms.ToTensor(),
+                                                     transforms.Resize((64,64))]))
     val_dl = DataLoader(val_data, batch_size=batchsize, shuffle=False)
     return val_dl

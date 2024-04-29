@@ -1,17 +1,13 @@
 from Embedding import clip_text_embedding, clip_image_embedding, t5_embedding
 from coco_dataloader import get_train_data, get_val_data
 
-train = get_train_data(3)
+train = get_train_data(1)
 for image, cap in train:
-    trans = clip_text_embedding
-    T5_em = t5_embedding
-    out1 = trans(cap[0])
-    # t5_1 = T5_em(cap[0])
-    print(image)
-    print(cap[0])
-    print(out1.shape)
+    if len(cap) != 5:
+        print(len(cap), "IMPOSTER")
+        print(cap)
     # print(t5_1.shape)
-    die
+    
 # trans = CLIP_embed()
 # T5_em = T5_embed()
 # out1 = trans(cap[0])
