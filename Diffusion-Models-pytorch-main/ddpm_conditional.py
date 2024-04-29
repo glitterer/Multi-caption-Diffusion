@@ -25,10 +25,10 @@ from coco_dataloader import get_train_data, get_val_data
 
 config = SimpleNamespace(    
     run_name = "text_con_ddpm",
-    epochs = 40,
+    epochs = 1,
     noise_steps=1000,
     seed = 42,
-    batch_size = 12,
+    batch_size = 1,
     img_size = 128,
     text_embed_length = 512,
     train_folder = "train",
