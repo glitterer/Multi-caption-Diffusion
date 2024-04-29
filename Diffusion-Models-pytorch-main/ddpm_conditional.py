@@ -24,11 +24,11 @@ from coco_dataloader import get_train_data, get_val_data
 
 
 config = SimpleNamespace(    
-    run_name = "Clip_text_ddpm",
-    epochs = 1,
+    run_name = "text_con_ddpm",
+    epochs = 40,
     noise_steps=1000,
     seed = 42,
-    batch_size = 1,
+    batch_size = 12,
     img_size = 128,
     text_embed_length = 512,
     train_folder = "train",
@@ -183,10 +183,8 @@ class Diffusion:
                 avg_loss = self.one_epoch(train=False)
                 print("Val_mse", avg_loss)
             
-            if epoch % 15 == 0:
+            if epoch % config.log_every_epoch == 0:
                 self.log_images(epoch)
-            
-            if epoch % 10 == 0:
                 self.save_model(run_name=args.run_name, epoch=epoch)
 
         # save model

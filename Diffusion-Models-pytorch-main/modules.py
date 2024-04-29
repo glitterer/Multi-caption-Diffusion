@@ -2,8 +2,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchtext.transforms import CLIPTokenizer
-from torchtext.models import T5Transform
 
 def one_param(m):
     "get model first parameter"
