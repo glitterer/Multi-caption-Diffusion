@@ -15,7 +15,7 @@ def get_train_data(batchsize:int):
                         transform=transforms.Compose([transforms.ToTensor(),
                                                      transforms.Resize((64,64))]))
     
-    train_dl = DataLoader(train_data, batch_size=batchsize, shuffle=True)
+    train_dl = DataLoader(train_data, batch_size=batchsize, shuffle=True) # shuffle so it won't overfit
     return train_dl
 
 def get_val_data(batchsize: int):
@@ -23,5 +23,5 @@ def get_val_data(batchsize: int):
                         annFile = cwd+'/COCO2014trainValCap/annotations/captions_val2014.json',
                         transform=transforms.Compose([transforms.ToTensor(),
                                                      transforms.Resize((64,64))]))
-    val_dl = DataLoader(val_data, batch_size=batchsize, shuffle=False)
+    val_dl = DataLoader(val_data, batch_size=batchsize, shuffle=True) # shuffle so it won't overfit
     return val_dl
