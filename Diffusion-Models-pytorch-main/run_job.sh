@@ -8,7 +8,7 @@
 #SBATCH -e job_error_%x_%j.e
 #SBATCH -o job_out_%x_%j.o
 #SBATCH --nodes=1
-#SBATCH --nodelist=gpu[1701-1708]
+#SBATCH --exclude=gpu[1601-1605]
 
 source activate ~/miniconda3/envs/DLproject
 cd ~/CSCI2470Project/Multi-caption-Diffusion/Diffusion-Models-pytorch-main
