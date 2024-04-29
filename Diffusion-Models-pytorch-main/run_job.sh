@@ -1,5 +1,5 @@
 #!/bin/bash
-
+nvidia-smi
 #SBATCH --job-name="ddpm_1_epoch_1_batch"
 #SBATCH --partition=gpus
 #SBATCH --mem=120G
