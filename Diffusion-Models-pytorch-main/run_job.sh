@@ -1,5 +1,5 @@
 #!/bin/bash
-nvidia-smi
+
 #SBATCH --job-name="ddpm_1_epoch_1_batch"
 #SBATCH --partition=gpus
 #SBATCH --mem=120G
@@ -13,5 +13,5 @@ nvidia-smi
 
 source activate ~/miniconda3/envs/DLproject
 cd ~/CSCI2470Project/Multi-caption-Diffusion/Diffusion-Models-pytorch-main
-
+nvidia-smi
 python train.py
