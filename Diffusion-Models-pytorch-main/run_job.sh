@@ -9,6 +9,7 @@
 #SBATCH -o job_out_%x_%j.o
 #SBATCH --nodes=1
 #SBATCH --exclude=gpu[1601-1605]
+#SBATCH --gpus-per-node=1
 
 source activate ~/miniconda3/envs/DLproject
 cd ~/CSCI2470Project/Multi-caption-Diffusion/Diffusion-Models-pytorch-main
