@@ -7,7 +7,7 @@ cwd = '/home/rdemello/MSCOCO'
 
 class CustomCocoCaptions(dset.CocoCaptions):
     def _load_target(self, id: int) -> List[str]:
-        return super()._load_target(id)[:5]
+        return super()._load_target(id)[:5] # Some img contain more than 5 captions. Make is so that all has 5 captions.
 
 def get_train_data(batchsize:int):
     train_data = CustomCocoCaptions(root = cwd+'/COCO2014trainimg/train2014',

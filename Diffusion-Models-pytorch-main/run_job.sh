@@ -12,6 +12,6 @@
 #SBATCH --gpus-per-node=1
 
 source activate ~/miniconda3/envs/DLproject
-cd ~/CSCI2470Project/Multi-caption-Diffusion/Diffusion-Models-pytorch-main
+cd ~/Multi-caption-Diffusion/Diffusion-Models-pytorch-main
 nvidia-smi
 python train.py
