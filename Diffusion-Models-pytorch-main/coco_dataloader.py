@@ -8,7 +8,7 @@ def get_train_data(batchsize:int):
     train_data = dset.CocoCaptions(root = cwd+'/COCO2014trainimg/train2014',
                         annFile = cwd+'/COCO2014trainValCap/annotations/captions_train2014.json',
                         transform=transforms.Compose([transforms.ToTensor(),
-                                                     transforms.Resize((128,128))]))
+                                                     transforms.Resize((64,64))]))
     
     train_dl = DataLoader(train_data, batch_size=batchsize, shuffle=True)
     return train_dl
