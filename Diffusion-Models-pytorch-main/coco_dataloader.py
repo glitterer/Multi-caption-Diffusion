@@ -3,7 +3,7 @@ import torchvision.datasets as dset
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 import os
-cwd = '/home/rdemello/MSCOCO'
+cwd = '/home/soh62/MSCOCO'
 
 class CustomCocoCaptions(dset.CocoCaptions):
     def _load_target(self, id: int) -> List[str]:
