@@ -81,7 +81,7 @@ class DoubleConv(nn.Module):
 
 
 class Down(nn.Module):
-    def __init__(self, in_channels, out_channels, emb_dim=512):
+    def __init__(self, in_channels, out_channels, emb_dim=256):
         super().__init__()
         self.maxpool_conv = nn.Sequential(
             nn.MaxPool2d(2),
@@ -104,7 +104,7 @@ class Down(nn.Module):
 
 
 class Up(nn.Module):
-    def __init__(self, in_channels, out_channels, emb_dim=512):
+    def __init__(self, in_channels, out_channels, emb_dim=256):
         super().__init__()
 
         self.up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
@@ -130,7 +130,7 @@ class Up(nn.Module):
 
 
 class UNet(nn.Module):
-    def __init__(self, c_in=3, c_out=3, time_dim=512, remove_deep_conv=False):
+    def __init__(self, c_in=3, c_out=3, time_dim=256, remove_deep_conv=False):
         super().__init__()
         self.time_dim = time_dim
         self.remove_deep_conv = remove_deep_conv
@@ -199,7 +199,7 @@ class UNet(nn.Module):
 
 
 class UNet_conditional(UNet):
-    def __init__(self, c_in=3, c_out=3, time_dim=512, text_embed_length=None, max_embed=100, **kwargs):
+    def __init__(self, c_in=3, c_out=3, time_dim=256, text_embed_length=None, max_embed=100, **kwargs):
         super().__init__(c_in, c_out, time_dim, **kwargs)
 
     # P(x|t,y)_ x:image, t: time embedding, y: caption embedding

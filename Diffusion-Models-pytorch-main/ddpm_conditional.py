@@ -28,9 +28,9 @@ config = SimpleNamespace(
     epochs = 40,
     noise_steps=1000,
     seed = 42,
-    batch_size = 16,
+    batch_size = 32,
     img_size = 64,
-    text_embed_length = 512,
+    text_embed_length = 256,
     train_folder = "train",
     val_folder = "test",
     device = "cuda",
@@ -46,7 +46,7 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=log
 
 
 class Diffusion:
-    def __init__(self, noise_steps=1000, beta_start=1e-4, beta_end=0.02, img_size1=64, img_size2=64, text_embed_length=512, c_in=3, c_out=3, device="cuda", **kwargs):
+    def __init__(self, noise_steps=1000, beta_start=1e-4, beta_end=0.02, img_size1=64, img_size2=64, text_embed_length=256, c_in=3, c_out=3, device="cuda", **kwargs):
         self.noise_steps = noise_steps
         self.beta_start = beta_start
         self.beta_end = beta_end
@@ -54,7 +54,7 @@ class Diffusion:
         self.beta = self.prepare_noise_schedule().to(device)
         self.alpha = 1. - self.beta
         self.alpha_hat = torch.cumprod(self.alpha, dim=0)
-
+        self.cap_reduce = torch.nn.Sequential(torch.nn.Linear(512, 256), torch.nn.LeakyReLU()).to(device)
         self.img_size1 = img_size1
         self.img_size2 = img_size2
         self.model = UNet_conditional(c_in, c_out, text_embed_length = text_embed_length, **kwargs).to(device)
@@ -84,6 +84,7 @@ class Diffusion:
     def sample(self, use_ema, labels, cfg_scale=3):
         model = self.ema_model if use_ema else self.model
         n = len(labels)
+        labels = self.cap_reduce(labels)
         logging.info(f"Sampling {n} new images....")
         model.eval()
         with torch.inference_mode():
@@ -120,11 +121,12 @@ class Diffusion:
         else: self.model.eval()
         pbar = progress_bar(self.train_dataloader)
         for i, (images, labels) in enumerate(pbar):
+            labels = self.cap_enc([labels[0]]).type(torch.float32).to(self.device)
             with torch.autocast("cuda") and (torch.inference_mode() if not train else torch.enable_grad()):
                 
                 images = images.type(torch.FloatTensor).to(self.device)
+                labels = self.cap_reduce(labels)
                 
-                labels = self.cap_enc([labels[0]]).to(self.device)
                 t = self.sample_timesteps(images.shape[0]).to(self.device)
                 x_t, noise = self.noise_images(images, t)
                 
