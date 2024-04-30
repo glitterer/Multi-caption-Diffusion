@@ -84,13 +84,15 @@ class Diffusion:
     def sample(self, use_ema, labels, cfg_scale=3):
         model = self.ema_model if use_ema else self.model
         n = len(labels)
-        labels = self.cap_reduce(labels)
         logging.info(f"Sampling {n} new images....")
         model.eval()
         with torch.inference_mode():
+            labels = self.cap_reduce(labels).to(self.device)
             x = torch.randn((n, self.c_in, self.img_size1, self.img_size2)).to(self.device)
             for i in progress_bar(reversed(range(1, self.noise_steps)), total=self.noise_steps-1, leave=False):
                 t = (torch.ones(n) * i).long().to(self.device)
+    
+                
                 predicted_noise = model(x, t, labels)
                 if cfg_scale > 0:
                     uncond_predicted_noise = model(x, t, None)
@@ -140,14 +142,14 @@ class Diffusion:
                 self.train_step(loss)
                 print("train_mse " + str(loss.item()) + " learning_rate "+ str(self.scheduler.get_last_lr()[0]) + " batch:" + str(i) + " of 5174")
             pbar.comment = f"MSE={loss.item():2.3f}"
-            if i == 10:
+            if i == 2587:
                 break
         return avg_loss.mean().item()
 
     def log_images(self, epoch):
         "Log images to save them to disk"
-        labels1 = self.cap_enc(['A zebra walking on the street']).to(self.device)
-        labels2 = self.cap_enc(['A plate of food']).to(self.device)
+        labels1 = self.cap_enc(['A zebra walking on the street']).type(torch.float32).to(self.device)
+        labels2 = self.cap_enc(['A car on grass']).type(torch.float32).to(self.device)
         labels = torch.cat([labels1, labels2])
         labels = labels.reshape((2, 512))
         sampled_images = self.sample(use_ema=False, labels=labels)
