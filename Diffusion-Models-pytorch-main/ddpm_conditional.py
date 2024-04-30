@@ -154,8 +154,8 @@ class Diffusion:
         sampled_images = self.sample(use_ema=False, labels=labels)
         sampled_images = sampled_images.permute((0, 2, 3, 1))
         sampled_images = sampled_images.cpu().detach().numpy()
-        plt.imsave(f'img1_e{epoch}.png', sampled_images[0])
-        plt.imsave(f'img2_e{epoch}.png',sampled_images[1])
+        plt.imsave(f'img1_e{epoch}_full.png', sampled_images[0])
+        plt.imsave(f'img2_e{epoch}_full.png',sampled_images[1])
         
 
     def load(self, model_cpkt_path, model_ckpt="checkpt_e10.pt", ema_model_ckpt="ema_checkpt_e10.pt"):
