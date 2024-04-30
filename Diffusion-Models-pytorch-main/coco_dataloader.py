@@ -23,5 +23,5 @@ def get_val_data(batchsize: int):
                         annFile = cwd+'/COCO2014trainValCap/annotations/captions_val2014.json',
                         transform=transforms.Compose([transforms.ToTensor(),
                                                      transforms.Resize((64,64))]))
-    val_dl = DataLoader(val_data, batch_size=batchsize, shuffle=False)
+    val_dl = DataLoader(val_data, batch_size=batchsize, shuffle=True)
     return val_dl

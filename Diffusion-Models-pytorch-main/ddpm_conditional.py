@@ -28,7 +28,7 @@ config = SimpleNamespace(
     epochs = 40,
     noise_steps=1000,
     seed = 42,
-    batch_size = 16,
+    batch_size = 24,
     img_size = 64,
     text_embed_length = 512,
     train_folder = "train",
@@ -176,6 +176,7 @@ class Diffusion:
     def fit(self, args):
         for epoch in progress_bar(range(args.epochs), total=args.epochs, leave=True):
             logging.info(f"Starting epoch {epoch}:")
+            print("Epoch "+epoch)
             _  = self.one_epoch(train=True)
             
             ## validation
@@ -183,9 +184,9 @@ class Diffusion:
                 avg_loss = self.one_epoch(train=False)
                 print("Val_mse", avg_loss)
             
-            if epoch % config.log_every_epoch == 0:
-                self.log_images(epoch)
-                self.save_model(run_name=args.run_name, epoch=epoch)
+            
+            self.log_images(epoch)
+            self.save_model(run_name=args.run_name, epoch=epoch)
 
         # save model
         self.save_model(run_name=args.run_name, epoch=epoch)

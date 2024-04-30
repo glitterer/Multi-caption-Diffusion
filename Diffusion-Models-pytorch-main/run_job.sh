@@ -4,7 +4,7 @@
 #SBATCH --partition=gpus
 #SBATCH --mem=120G
 #SBATCH --cpus-per-task=8
-#SBATCH --time=2-10:00:00
+#SBATCH --time=4-10:00:00
 #SBATCH -e job_error_%x_%j.e
 #SBATCH -o job_out_%x_%j.o
 #SBATCH --nodes=1

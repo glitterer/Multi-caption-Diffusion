@@ -7,11 +7,11 @@ from ddpm_conditional import Diffusion
 # This is a very simple example, for more advanced training, see `ddp_conditional.py`
 
 config = SimpleNamespace(    
-    run_name = "T5_encoded_Diffusion",
-    epochs = 25,
+    run_name = "text_con_diff",
+    epochs = 40,
     noise_steps=1000,
     seed = 42,
-    batch_size = 1,
+    batch_size = 24,
     img_size = 256,
     num_classes = 10,
     train_folder = "train",
