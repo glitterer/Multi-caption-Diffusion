@@ -120,7 +120,7 @@ class Diffusion:
         if train: self.model.train()
         else: self.model.eval()
         pbar = progress_bar(self.train_dataloader)
-        length = len(pbar)
+        
         for i, (images, labels) in enumerate(pbar):
             labels = self.cap_enc([labels[0]]).type(torch.float32).to(self.device)
             with torch.autocast("cuda") and (torch.inference_mode() if not train else torch.enable_grad()):
@@ -138,7 +138,7 @@ class Diffusion:
                 avg_loss += loss
             if train:
                 self.train_step(loss)
-                print("train_mse " + str(loss.item()) + " learning_rate "+ str(self.scheduler.get_last_lr()[0]) + " batch:" + str(i) + " of " + str(length))
+                print("train_mse " + str(loss.item()) + " learning_rate "+ str(self.scheduler.get_last_lr()[0]) + " batch:" + str(i) + " of 5174")
             pbar.comment = f"MSE={loss.item():2.3f}"        
         return avg_loss.mean().item()
 
