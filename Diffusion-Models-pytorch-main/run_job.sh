@@ -3,7 +3,7 @@
 #SBATCH --job-name="ddpm"
 #SBATCH --partition=gpus
 #SBATCH --mem=120G
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=1
 #SBATCH --time=4-10:00:00
 #SBATCH -e job_%x_%j.e
 #SBATCH -o job_%x_%j.o
