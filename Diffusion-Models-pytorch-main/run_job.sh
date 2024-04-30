@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name="ddpm_1_epoch_1_batch"
+#SBATCH --job-name="ddpm"
 #SBATCH --partition=gpus
 #SBATCH --mem=120G
 #SBATCH --cpus-per-task=8
