@@ -33,7 +33,7 @@ config = SimpleNamespace(
     text_embed_length = 256,
     train_folder = "train",
     val_folder = "test",
-    device = "cuda",
+    device = "cuda:1",
     slice_size = 1,
     do_validation = True,
     fp16 = True,
@@ -46,7 +46,7 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=log
 
 
 class Diffusion:
-    def __init__(self, noise_steps=1000, beta_start=1e-4, beta_end=0.02, img_size1=64, img_size2=64, text_embed_length=256, c_in=3, c_out=3, device="cuda", **kwargs):
+    def __init__(self, noise_steps=1000, beta_start=1e-4, beta_end=0.02, img_size1=64, img_size2=64, text_embed_length=256, c_in=3, c_out=3, device="cuda:1", **kwargs):
         self.noise_steps = noise_steps
         self.beta_start = beta_start
         self.beta_end = beta_end
