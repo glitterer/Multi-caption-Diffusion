@@ -176,7 +176,7 @@ class Diffusion:
     def fit(self, args):
         for epoch in progress_bar(range(args.epochs), total=args.epochs, leave=True):
             logging.info(f"Starting epoch {epoch}:")
-            print("Epoch "+epoch)
+            print("Epoch ",epoch)
             _  = self.one_epoch(train=True)
             
             ## validation
