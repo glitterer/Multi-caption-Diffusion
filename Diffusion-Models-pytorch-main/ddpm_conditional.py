@@ -139,7 +139,9 @@ class Diffusion:
             if train:
                 self.train_step(loss)
                 print("train_mse " + str(loss.item()) + " learning_rate "+ str(self.scheduler.get_last_lr()[0]) + " batch:" + str(i) + " of 5174")
-            pbar.comment = f"MSE={loss.item():2.3f}"        
+            pbar.comment = f"MSE={loss.item():2.3f}"
+            if i == 10:
+                break
         return avg_loss.mean().item()
 
     def log_images(self, epoch):
