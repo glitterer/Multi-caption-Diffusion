@@ -12,7 +12,7 @@
 #SBATCH --gpus-per-node=2
 
 source activate ~/miniconda3/envs/DLproject
-PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+export PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True'
 cd ~/CSCI2470Project/Multi-caption-Diffusion/Diffusion-Models-pytorch-main
 nvidia-smi
 python train.py
