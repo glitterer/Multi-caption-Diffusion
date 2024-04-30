@@ -28,12 +28,12 @@ config = SimpleNamespace(
     epochs = 40,
     noise_steps=1000,
     seed = 42,
-    batch_size = 24,
+    batch_size = 16,
     img_size = 64,
     text_embed_length = 256,
     train_folder = "train",
     val_folder = "test",
-    device = "cuda:1",
+    device = "cuda",
     slice_size = 1,
     do_validation = True,
     fp16 = True,
@@ -46,7 +46,7 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=log
 
 
 class Diffusion:
-    def __init__(self, noise_steps=1000, beta_start=1e-4, beta_end=0.02, img_size1=64, img_size2=64, text_embed_length=256, c_in=3, c_out=3, device="cuda:1", **kwargs):
+    def __init__(self, noise_steps=1000, beta_start=1e-4, beta_end=0.02, img_size1=64, img_size2=64, text_embed_length=256, c_in=3, c_out=3, device="cuda", **kwargs):
         self.noise_steps = noise_steps
         self.beta_start = beta_start
         self.beta_end = beta_end
@@ -120,6 +120,7 @@ class Diffusion:
         if train: self.model.train()
         else: self.model.eval()
         pbar = progress_bar(self.train_dataloader)
+        length = len(pbar)
         for i, (images, labels) in enumerate(pbar):
             labels = self.cap_enc([labels[0]]).type(torch.float32).to(self.device)
             with torch.autocast("cuda") and (torch.inference_mode() if not train else torch.enable_grad()):
@@ -137,7 +138,7 @@ class Diffusion:
                 avg_loss += loss
             if train:
                 self.train_step(loss)
-                print("train_mse " + str(loss.item()) + " learning_rate "+ str(self.scheduler.get_last_lr()[0]))
+                print("train_mse " + str(loss.item()) + " learning_rate "+ str(self.scheduler.get_last_lr()[0]) + " batch:" + str(i) + " of " + str(length))
             pbar.comment = f"MSE={loss.item():2.3f}"        
         return avg_loss.mean().item()
 
