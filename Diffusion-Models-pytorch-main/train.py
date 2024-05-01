@@ -8,7 +8,7 @@ from ddpm_conditional import Diffusion
 
 config = SimpleNamespace(    
     run_name = "T5_encoded_Diffusion",
-    epochs = 25,
+    epochs = 20,
     noise_steps=1000,
     seed = 42,
     batch_size = 1,

@@ -94,3 +94,6 @@ def t5_embedding(caption):
         text_embedding.append(last_hidden_states)
 
     return text_embedding[0]
+
+
+clip_text_embedding()
