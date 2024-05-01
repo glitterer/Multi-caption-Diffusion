@@ -2,7 +2,7 @@
 
 #SBATCH --job-name="ddpm_1eb"
 #SBATCH --partition=gpus
-#SBATCH --mem=110G
+#SBATCH --mem=120G
 #SBATCH --cpus-per-task=8
 #SBATCH --time=5-10:00:00
 #SBATCH -e job_error_%x_%j.e
