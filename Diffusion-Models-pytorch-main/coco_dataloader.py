@@ -5,7 +5,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 import os
 import json
-cwd = '~/MSCOCO/'
+cwd = '/home/rdemello/MSCOCO/'
 
 class CustomCocoCaptions(dset.CocoCaptions):
     def _load_target(self, id: int):
