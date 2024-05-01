@@ -28,8 +28,8 @@ config = SimpleNamespace(
     epochs = 40,
     noise_steps=1000,
     seed = 42,
-    batch_size = 16,
-    img_size = 84,
+    batch_size = 12,
+    img_size = 80,
     text_embed_length = 256,
     train_folder = "train",
     val_folder = "test",
@@ -62,7 +62,7 @@ class Diffusion:
         self.device = device
         self.c_in = c_in
         self.text_embed_length = text_embed_length
-        self.cap_enc = clip_text_embedding
+        # self.cap_enc = clip_text_embedding
 
     def prepare_noise_schedule(self):
         return torch.linspace(self.beta_start, self.beta_end, self.noise_steps)
@@ -124,20 +124,20 @@ class Diffusion:
         pbar = progress_bar(self.train_dataloader)
         
         for i, (images, labels) in enumerate(pbar):
-            labels = self.cap_enc([labels[0]]).type(torch.float32).to(self.device)
             with torch.autocast("cuda") and (torch.inference_mode() if not train else torch.enable_grad()):
                 
                 images = images.type(torch.FloatTensor).to(self.device)
+                labels = labels.to(self.device)
                 labels = self.cap_reduce(labels)
                 
                 t = self.sample_timesteps(images.shape[0]).to(self.device)
-                x_t, noise = self.noise_images(images, t)
                 
+                x_t, noise = self.noise_images(images, t)
                 if np.random.random() < 0.15:
                     labels = None
                 predicted_noise = self.model(x_t, t, labels)
                 loss = self.mse(noise, predicted_noise)
-                avg_loss += loss
+                avg_loss += loss.cpu().detach()
             if train:
                 self.train_step(loss)
                 print("train_mse " + str(loss.item()) + " learning_rate "+ str(self.scheduler.get_last_lr()[0]) + " batch:" + str(i) + " of 5174")
@@ -145,17 +145,17 @@ class Diffusion:
             
         return avg_loss.mean().item()
 
-    def log_images(self, epoch):
-        "Log images to save them to disk"
-        labels1 = self.cap_enc(['A zebra walking on the street']).type(torch.float32).to(self.device)
-        labels2 = self.cap_enc(['A car on grass']).type(torch.float32).to(self.device)
-        labels = torch.cat([labels1, labels2])
-        labels = labels.reshape((2, 512))
-        sampled_images = self.sample(use_ema=False, labels=labels)
-        sampled_images = sampled_images.permute((0, 2, 3, 1))
-        sampled_images = sampled_images.cpu().detach().numpy()
-        plt.imsave(f'img1_e{epoch}_full.png', sampled_images[0])
-        plt.imsave(f'img2_e{epoch}_full.png',sampled_images[1])
+    # def log_images(self, epoch):
+    #     "Log images to save them to disk"
+    #     labels1 = self.cap_enc(['A zebra walking on the street']).type(torch.float32).to(self.device)
+    #     labels2 = self.cap_enc(['A car on grass']).type(torch.float32).to(self.device)
+    #     labels = torch.cat([labels1, labels2])
+    #     labels = labels.reshape((2, 512))
+    #     sampled_images = self.sample(use_ema=False, labels=labels)
+    #     sampled_images = sampled_images.permute((0, 2, 3, 1))
+    #     sampled_images = sampled_images.cpu().detach().numpy()
+    #     plt.imsave(f'img1_e{epoch}_full.png', sampled_images[0])
+    #     plt.imsave(f'img2_e{epoch}_full.png',sampled_images[1])
         
 
     def load(self, model_cpkt_path, model_ckpt="checkpt_e10.pt", ema_model_ckpt="ema_checkpt_e10.pt"):
@@ -191,7 +191,7 @@ class Diffusion:
                 print("Val_mse", avg_loss)
             
             
-            self.log_images(epoch)
+            # self.log_images(epoch)
             self.save_model(run_name=args.run_name, epoch=epoch)
 
         # save model

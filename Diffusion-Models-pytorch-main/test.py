@@ -4,42 +4,90 @@ import matplotlib.pyplot as plt
 import json
 import tqdm
 from tqdm import tqdm
+import torch
+from fastprogress import progress_bar
 
-data = load_annotations()
-ann = data.get('annotations')
+# data = load_annotations(True)
+# ann = data.get('annotations')
 
-new_ann = []
-image_ids = []
-batch = []
-batch_size = 488
-cur_batch = []
-batch_cap = []
-
-for cur in tqdm(ann):
-    if cur['image_id'] not in image_ids:
-        # cur['caption'] = clip_text_embedding([cur.get('caption')]).squeeze().tolist()
-        # new_ann.append(cur)
-        image_ids.append(cur['image_id'])
-        cur_batch.append(cur)
-        batch_cap.append(cur['caption'])
-        if len(cur_batch) == batch_size:
-            embeded = clip_text_embedding(batch_cap)
-            for i, batch in enumerate(cur_batch):
-                cap = embeded[0]
-                batch['caption'] = cap.tolist()
-                new_ann.append(batch)
-            cur_batch.clear()
-            batch_cap.clear()
-            
+# new_ann = []
+# batch = []
+# batch_size = 4000
+# cur_batch = []
+# batch_cap = []
+# max = len(ann)
+# print(max)
+# i = 0
+# for cur in tqdm(ann):
+#     i += 1
+#     # cur['caption'] = clip_text_embedding([cur.get('caption')]).squeeze().tolist()
+#     # new_ann.append(cur)
+#     cur_batch.append(cur)
+#     batch_cap.append(cur['caption'])
+#     if len(cur_batch) == batch_size or i == max:
+#         embeded = clip_text_embedding(batch_cap)
+#         for j in range(len(cur_batch)):
+#             cap = embeded[j].tolist()
+#             if len(cap) == 0:
+#                 print("Zero detected")
+#                 print(batch_cap[j])
+#             batch = cur_batch[j]
+#             batch['caption'] = cap
+#             new_ann.append(batch)
+#         cur_batch.clear()
+#         batch_cap.clear()
+        
      
 
-data['annotations'] = new_ann
-with open("test.json", "w") as outfile:
-    json.dump(data, outfile)
+# data['annotations'] = new_ann
 
-# train = get_train_data(1)
-# for image, cap in train:
-#     print(cap[0])
+# with open("train_clip_text.json", "w") as outfile:
+#     json.dump(data, outfile)
+    
+# data = load_annotations(False)
+# ann = data.get('annotations')
+
+# new_ann = []
+# batch = []
+# batch_size = 4000
+# cur_batch = []
+# batch_cap = []
+# max = len(ann)
+# print(max)
+# i = 0
+# for cur in tqdm(ann):
+#     i += 1
+#     # cur['caption'] = clip_text_embedding([cur.get('caption')]).squeeze().tolist()
+#     # new_ann.append(cur)
+#     cur_batch.append(cur)
+#     batch_cap.append(cur['caption'])
+#     if len(cur_batch) == batch_size or i == max:
+#         embeded = clip_text_embedding(batch_cap)
+#         for j in range(len(cur_batch)):
+#             cap = embeded[j].tolist()
+#             if len(cap) == 0:
+#                 print("Zero detected")
+#                 print(batch_cap[j])
+#             batch = cur_batch[j]
+#             batch['caption'] = cap
+#             new_ann.append(batch)
+#         cur_batch.clear()
+#         batch_cap.clear()
+        
+
+# data['annotations'] = new_ann
+
+# with open("val_clip_text.json", "w") as outfile:
+#     json.dump(data, outfile)
+
+train = get_train_data(1)
+pbar = progress_bar(train)
+        
+for i, (images, cap) in enumerate(pbar):
+    if cap.shape != torch.Size([1,512]):
+        print(cap.shape)
+        aaaa
+    
 #     image = image.permute((0, 2, 3, 1))
 #     plt.imshow(image[0].numpy())
 #     plt.show()
