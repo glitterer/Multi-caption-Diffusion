@@ -15,7 +15,7 @@ import torchvision
 from torch import optim
 import torch.nn as nn
 import numpy as np
-from fastprogress import progress_bar
+# from fastprogress import progress_bar
 
 from Embedding import clip_text_embedding, clip_image_embedding, t5_embedding
 from utils import *
@@ -88,7 +88,7 @@ class Diffusion:
         model.eval()
         with torch.inference_mode():
             x = torch.randn((n, self.c_in, self.img_size1, self.img_size2)).to(self.device)
-            for i in progress_bar(reversed(range(1, self.noise_steps)), total=self.noise_steps-1, leave=False):
+            for i in reversed(range(1, self.noise_steps)):
                 t = (torch.ones(n) * i).long().to(self.device)
                 predicted_noise = model(x, t, labels)
                 if cfg_scale > 0:
@@ -116,10 +116,12 @@ class Diffusion:
 
     def one_epoch(self, train=True):
         avg_loss = 0.
-        if train: self.model.train()
-        else: self.model.eval()
-        pbar = progress_bar(self.train_dataloader)
-        for i, (images, labels) in enumerate(pbar):
+        if train: 
+            self.model.train()
+        else: 
+            self.model.eval()
+        # pbar = progress_bar(self.train_dataloader)
+        for i, (images, labels) in enumerate(self.train_dataloader):
             with torch.autocast("cuda") and (torch.inference_mode() if not train else torch.enable_grad()):
                 
                 images = images.type(torch.FloatTensor).to(self.device)
@@ -136,7 +138,7 @@ class Diffusion:
             if train:
                 self.train_step(loss)
                 print("train_mse " + str(loss.item()) + " learning_rate "+ str(self.scheduler.get_last_lr()[0]))
-            pbar.comment = f"MSE={loss.item():2.3f}"        
+            # pbar.comment = f"MSE={loss.item():2.3f}"        
         return avg_loss.mean().item()
 
     def log_images(self, epoch):
@@ -174,7 +176,7 @@ class Diffusion:
         self.scaler = torch.cuda.amp.GradScaler()
 
     def fit(self, args):
-        for epoch in progress_bar(range(args.epochs), total=args.epochs, leave=True):
+        for epoch in range(args.epochs):
             logging.info(f"Starting epoch {epoch}:")
             _  = self.one_epoch(train=True)
             
