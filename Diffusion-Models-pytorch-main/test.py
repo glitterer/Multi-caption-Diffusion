@@ -40,6 +40,7 @@ new_ann = []
 
 for cur in tqdm(ann):
     cur['caption'] = all_images[cur['image_id']]
+    new_ann.append(cur)
 
 data['annotations'] = new_ann
 
@@ -76,6 +77,7 @@ new_ann = []
 
 for cur in tqdm(ann):
     cur['caption'] = all_images[cur['image_id']]
+    new_ann.append(cur)
 
 data['annotations'] = new_ann
 
