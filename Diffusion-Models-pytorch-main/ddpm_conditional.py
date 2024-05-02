@@ -148,6 +148,14 @@ class Diffusion:
             pbar.comment = f"MSE={loss.item():2.3f}"
             
             if i == stop:
+                fname = config.run_name + '.txt'
+                if train:
+                    message = "Average loss of train:" + str(avg_loss.mean())
+                else:
+                    message = "Average loss of val:" + str(avg_loss.mean())
+                with open(fname, 'a+') as f:
+                    f.write(message)
+                    f.close()
                 break
         return avg_loss.mean().item()
 
@@ -170,9 +178,9 @@ class Diffusion:
 
     def save_model(self, run_name, epoch=-1):
         "Save model locally"
-        torch.save(self.model.state_dict(), os.path.join("models", run_name, f"checkpt_e{epoch}.pt"))
-        torch.save(self.ema_model.state_dict(), os.path.join("models", run_name, f"ema_checkpt_e{epoch}.pt"))
-        torch.save(self.optimizer.state_dict(), os.path.join("models", run_name, f"optim_e{epoch}.pt"))
+        torch.save(self.model.state_dict(), os.path.join("models", run_name, f"uncon_checkpt_e{epoch}.pt"))
+        torch.save(self.ema_model.state_dict(), os.path.join("models", run_name, f"uncon_ema_checkpt_e{epoch}.pt"))
+        torch.save(self.optimizer.state_dict(), os.path.join("models", run_name, f"uncon_optim_e{epoch}.pt"))
         
 
     def prepare(self, args):
