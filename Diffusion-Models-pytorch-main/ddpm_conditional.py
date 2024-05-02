@@ -24,7 +24,7 @@ from coco_dataloader import get_train_data, get_val_data
 
 
 config = SimpleNamespace(    
-    run_name = "text_con_ddpm",
+    run_name = "uncon_ddpm",
     epochs = 40,
     noise_steps=1000,
     seed = 42,

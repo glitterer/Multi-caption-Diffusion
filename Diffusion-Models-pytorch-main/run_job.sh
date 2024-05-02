@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name="ddpm"
+#SBATCH --job-name="ddpm_uncon"
 #SBATCH --partition=gpus
 #SBATCH --mem=120G
 #SBATCH --cpus-per-task=4
