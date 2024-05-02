@@ -11,7 +11,7 @@ class CustomCocoCaptions(dset.CocoCaptions):
     def _load_target(self, id: int):
         captions = super()._load_target(id)
         # captions = torch.Tensor(captions).type(torch.float32)
-        return None
+        return captions[0]
 
 def get_train_data(batchsize:int):
     train_data = CustomCocoCaptions(root = cwd+'COCO2014trainimg/train2014',
