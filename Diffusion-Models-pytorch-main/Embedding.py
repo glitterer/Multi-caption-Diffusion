@@ -42,7 +42,7 @@ This will take a PIL image, preprocess the image from a PIL to a Tensor then enc
 params: 'image'- A PIL image.
 return: 'image_embedding' - Returns an image encoding based on a pretrained CLIP model of the inputed image
 '''
-def clip_image_embedding(image):
+def clip_image_embedding(images):
 
     # print("CLIP IMAGE EMBEDING")
 
@@ -51,7 +51,12 @@ def clip_image_embedding(image):
     model, preprocess = clip.load('ViT-B/32', device)
 
     # Prepare the input image to go from a PIL to a Tensor image and unsqueeze it
-    image_input = preprocess(image).unsqueeze(0).to(device)
+    all_img = []
+    for image in images:
+        image_input = preprocess(image).unsqueeze(0).to(device)
+        all_img.append(image_input)
+    all_img = torch.stack(all_img)
+    all_img = all_img.squeeze()
     # print("Image size", image_input.shape)
 
     # Calculate features
@@ -59,7 +64,7 @@ def clip_image_embedding(image):
     # model.encode_image(image: Tensor): Given a batch of images, returns the image features encoded by the vision portion of the CLIP model.
     with torch.no_grad():
         # Uses model to create image embedding
-        image_embedding = model.encode_image(image_input)
+        image_embedding = model.encode_image(all_img)
 
     # Print Shapes of encodings
     # print("Image Embedding", image_embedding.shape)
