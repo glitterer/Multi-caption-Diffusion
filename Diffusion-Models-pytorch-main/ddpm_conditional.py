@@ -19,7 +19,7 @@ from fastprogress import progress_bar
 
 from Embedding import clip_text_embedding, clip_image_embedding, t5_embedding
 from utils import *
-from modules import UNet_conditional, EMA
+from modules import UNet_conditional, EMA, UNet
 from coco_dataloader import get_train_data, get_val_data
 
 
@@ -46,7 +46,7 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=log
 
 
 class Diffusion:
-    def __init__(self, noise_steps=1000, beta_start=1e-4, beta_end=0.02, img_size1=84, img_size2=84, text_embed_length=256, c_in=3, c_out=3, device="cuda", **kwargs):
+    def __init__(self, noise_steps=1000, beta_start=1e-4, beta_end=0.02, img_size1=80, img_size2=80, text_embed_length=256, c_in=3, c_out=3, device="cuda", **kwargs):
         self.noise_steps = noise_steps
         self.beta_start = beta_start
         self.beta_end = beta_end
@@ -57,7 +57,7 @@ class Diffusion:
         self.cap_reduce = torch.nn.Sequential(torch.nn.Linear(512, 256), torch.nn.LeakyReLU()).to(device)
         self.img_size1 = img_size1
         self.img_size2 = img_size2
-        self.model = UNet_conditional(c_in, c_out, text_embed_length = text_embed_length, **kwargs).to(device)
+        self.model = UNet(c_in, c_out,  **kwargs).to(device)
         self.ema_model = copy.deepcopy(self.model).eval().requires_grad_(False)
         self.device = device
         self.c_in = c_in
@@ -122,20 +122,24 @@ class Diffusion:
         if train: self.model.train()
         else: self.model.eval()
         pbar = progress_bar(self.train_dataloader)
-        
+        if train:
+            batches = len(self.train_dataloader)
+        else:
+            batches = len(self.val_dataloader)
+        stop = int(batches/2)
         for i, (images, labels) in enumerate(pbar):
             with torch.autocast("cuda") and (torch.inference_mode() if not train else torch.enable_grad()):
                 
                 images = images.type(torch.FloatTensor).to(self.device)
-                labels = labels.to(self.device)
-                labels = self.cap_reduce(labels)
+                # labels = labels.to(self.device)
+                # labels = self.cap_reduce(labels)
                 
                 t = self.sample_timesteps(images.shape[0]).to(self.device)
                 
                 x_t, noise = self.noise_images(images, t)
-                if np.random.random() < 0.15:
-                    labels = None
-                predicted_noise = self.model(x_t, t, labels)
+                # if np.random.random() < 0.15:
+                labels = None
+                predicted_noise = self.model(x_t, t)
                 loss = self.mse(noise, predicted_noise)
                 avg_loss += loss.cpu().detach()
             if train:
@@ -143,6 +147,8 @@ class Diffusion:
                 print("train_mse " + str(loss.item()) + " learning_rate "+ str(self.scheduler.get_last_lr()[0]) + " batch:" + str(i) + " of 5174")
             pbar.comment = f"MSE={loss.item():2.3f}"
             
+            if i == stop:
+                break
         return avg_loss.mean().item()
 
     # def log_images(self, epoch):

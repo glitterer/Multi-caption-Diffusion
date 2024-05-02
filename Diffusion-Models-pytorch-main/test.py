@@ -8,81 +8,81 @@ import torch
 from fastprogress import progress_bar
 from PIL import Image
 
-data = load_annotations(True)
-ann = data.get('annotations')
-img = data.get('images')
-all_images = {}
+# data = load_annotations(True)
+# ann = data.get('annotations')
+# img = data.get('images')
+# all_images = {}
 
-train_path = '/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/data/train2014/'
-val_path = '/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/data/val2014/'
-batch = []
-batch_size = 3000
-max = len(img)
-cur_batch = []
-batch_cap = []
-i=0
-for cur in tqdm(img):
-    i += 1
-    cur_batch.append(cur)
-    image_path = train_path + cur['file_name']
-    img = Image.open(image_path)
-    batch_cap.append(img)
-    if len(cur_batch) == batch_size or i == max:
-        embeded = clip_image_embedding(batch_cap)
-        for j in range(len(cur_batch)):
-            all_images[cur_batch[j]['id']] = embeded[j].tolist()
+# train_path = '/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/data/train2014/'
+# val_path = '/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/data/val2014/'
+# batch = []
+# batch_size = 3000
+# max = len(img)
+# cur_batch = []
+# batch_cap = []
+# i=0
+# for cur in tqdm(img):
+#     i += 1
+#     cur_batch.append(cur)
+#     image_path = train_path + cur['file_name']
+#     img = Image.open(image_path)
+#     batch_cap.append(img)
+#     if len(cur_batch) == batch_size or i == max:
+#         embeded = clip_image_embedding(batch_cap)
+#         for j in range(len(cur_batch)):
+#             all_images[cur_batch[j]['id']] = embeded[j].tolist()
         
-        cur_batch.clear()
-        batch_cap.clear()
+#         cur_batch.clear()
+#         batch_cap.clear()
 
 
-new_ann = []
+# new_ann = []
 
-for cur in tqdm(ann):
-    cur['caption'] = all_images[cur['image_id']]
-    new_ann.append(cur)
+# for cur in tqdm(ann):
+#     cur['caption'] = all_images[cur['image_id']]
+#     new_ann.append(cur)
 
-data['annotations'] = new_ann
+# data['annotations'] = new_ann
 
-with open("train_clip_image.json", "w") as outfile:
-    json.dump(data, outfile)
+# with open("train_clip_image.json", "w") as outfile:
+#     json.dump(data, outfile)
 
-# Val
-data = load_annotations(False)
-ann = data.get('annotations')
-img = data.get('images')
-all_images = {}
-batch = []
-batch_size = 3000
-max = len(img)
-cur_batch = []
-batch_cap = []
-i=0
-for cur in tqdm(img):
-    i += 1
-    cur_batch.append(cur)
-    image_path = val_path + cur['file_name']
-    img = Image.open(image_path)
-    batch_cap.append(img)
-    if len(cur_batch) == batch_size or i == max:
-        embeded = clip_image_embedding(batch_cap)
-        for j in range(len(cur_batch)):
-            all_images[cur_batch[j]['id']] = embeded[j].tolist()
+# # Val
+# data = load_annotations(False)
+# ann = data.get('annotations')
+# img = data.get('images')
+# all_images = {}
+# batch = []
+# batch_size = 3000
+# max = len(img)
+# cur_batch = []
+# batch_cap = []
+# i=0
+# for cur in tqdm(img):
+#     i += 1
+#     cur_batch.append(cur)
+#     image_path = val_path + cur['file_name']
+#     img = Image.open(image_path)
+#     batch_cap.append(img)
+#     if len(cur_batch) == batch_size or i == max:
+#         embeded = clip_image_embedding(batch_cap)
+#         for j in range(len(cur_batch)):
+#             all_images[cur_batch[j]['id']] = embeded[j].tolist()
         
-        cur_batch.clear()
-        batch_cap.clear()
+#         cur_batch.clear()
+#         batch_cap.clear()
 
 
-new_ann = []
+# new_ann = []
 
-for cur in tqdm(ann):
-    cur['caption'] = all_images[cur['image_id']]
-    new_ann.append(cur)
+# for cur in tqdm(ann):
+#     cur['caption'] = all_images[cur['image_id']]
+#     new_ann.append(cur)
 
-data['annotations'] = new_ann
+# data['annotations'] = new_ann
 
-with open("val_clip_image.json", "w") as outfile:
-    json.dump(data, outfile)
+# with open("val_clip_image.json", "w") as outfile:
+#     json.dump(data, outfile)
   
   
 # for cur in tqdm(ann):
@@ -147,13 +147,13 @@ with open("val_clip_image.json", "w") as outfile:
 # with open("val_clip_text.json", "w") as outfile:
 #     json.dump(data, outfile)
 
-# train = get_train_data(1)
-# pbar = progress_bar(train)
+train = get_train_data(1)
+pbar = progress_bar(train)
         
-# for i, (images, cap) in enumerate(pbar):
-#     if cap.shape != torch.Size([1,512]):
-#         print(cap.shape)
-#         aaaa
+for i, (images, cap) in enumerate(pbar):
+    if cap.shape != torch.Size([1,512]):
+        print(cap.shape)
+        aaaa
     
 #     image = image.permute((0, 2, 3, 1))
 #     plt.imshow(image[0].numpy())
