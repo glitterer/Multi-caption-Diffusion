@@ -22,6 +22,9 @@ from utils import *
 from modules import UNet_conditional, EMA, UNet
 from coco_dataloader import get_train_data, get_val_data
 
+#fid import
+from torchmetrics.image.fid import FrechetInceptionDistance
+
 
 config = SimpleNamespace(    
     run_name = "uncon_ddpm",
@@ -63,6 +66,9 @@ class Diffusion:
         self.c_in = c_in
         self.text_embed_length = text_embed_length
         # self.cap_enc = clip_text_embedding
+        
+        #fid
+        self.fid = FrechetInceptionDistance().to(device)
 
     def prepare_noise_schedule(self):
         return torch.linspace(self.beta_start, self.beta_end, self.noise_steps)
@@ -119,8 +125,12 @@ class Diffusion:
 
     def one_epoch(self, train=True):
         avg_loss = 0.
-        if train: self.model.train()
-        else: self.model.eval()
+        if train: 
+            self.model.train()
+        else: 
+            self.model.eval()
+            #fid reset
+            self.fid.reset()
         pbar = progress_bar(self.train_dataloader)
         if train:
             batches = len(self.train_dataloader)
@@ -142,9 +152,15 @@ class Diffusion:
                 predicted_noise = self.model(x_t, t)
                 loss = self.mse(noise, predicted_noise)
                 avg_loss += loss.cpu().detach()
+                #fid update
+                if not train:
+                        with torch.inference_mode():
+                            generated_images = self.sample(use_ema=True, labels=labels)
+                            self.update_fid(images, generated_images)
             if train:
                 self.train_step(loss)
                 print("train_mse " + str(loss.item()) + " learning_rate "+ str(self.scheduler.get_last_lr()[0]) + " batch:" + str(i) + " of 5174")
+            
             pbar.comment = f"MSE={loss.item():2.3f}"
             
             if i == stop:
@@ -157,6 +173,11 @@ class Diffusion:
                     f.write(message)
                     f.close()
                 break
+        #compute fid and print
+        if not train:
+            fid_score = self.compute_fid()
+            print(f"image FID score: {fid_score}")
+            
         return avg_loss.mean().item()
 
     # def log_images(self, epoch):
@@ -212,7 +233,14 @@ class Diffusion:
         self.save_model(run_name=args.run_name, epoch=epoch)
 
 
-
+    def update_fid(self, real_images, generated_images):
+        #Update FID metric with new set of images
+        self.fid.update(real_images, real=True)
+        self.fid.update(generated_images, real=False)
+    
+    def compute_fid(self):
+        #fid computation
+        return self.fid.compute().item()
 
 def parse_args(config):
     parser = argparse.ArgumentParser(description='Process hyper-parameters')
