@@ -19,14 +19,14 @@ from fastprogress import progress_bar
 
 from Embedding import clip_text_embedding, clip_image_embedding, t5_embedding
 from utils import *
-from modules import UNet_conditional, EMA, UNet
+from modules import UNet_conditional, EMA
 from coco_dataloader import get_train_data, get_val_data
 
 
 config = SimpleNamespace(    
-    run_name = "uncon_ddpm",
+    run_name = "text_con_ddpm",
     epochs = 40,
-    noise_steps=1000,
+    noise_steps=50,
     seed = 42,
     batch_size = 8,
     img_size = 80,
@@ -46,7 +46,7 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=log
 
 
 class Diffusion:
-    def __init__(self, noise_steps=1000, beta_start=1e-4, beta_end=0.02, img_size1=80, img_size2=80, text_embed_length=256, c_in=3, c_out=3, device="cuda", **kwargs):
+    def __init__(self, noise_steps=50, beta_start=1e-4, beta_end=0.02, img_size1=80, img_size2=80, text_embed_length=256, c_in=3, c_out=3, device="cuda", **kwargs):
         self.noise_steps = noise_steps
         self.beta_start = beta_start
         self.beta_end = beta_end
@@ -57,12 +57,12 @@ class Diffusion:
         self.cap_reduce = torch.nn.Sequential(torch.nn.Linear(512, 256), torch.nn.LeakyReLU()).to(device)
         self.img_size1 = img_size1
         self.img_size2 = img_size2
-        self.model = UNet(c_in, c_out,  **kwargs).to(device)
+        self.model = UNet_conditional(c_in, c_out, text_embed_length = text_embed_length, **kwargs).to(device)
         self.ema_model = copy.deepcopy(self.model).eval().requires_grad_(False)
         self.device = device
         self.c_in = c_in
         self.text_embed_length = text_embed_length
-        # self.cap_enc = clip_text_embedding
+        self.cap_enc = clip_text_embedding
 
     def prepare_noise_schedule(self):
         return torch.linspace(self.beta_start, self.beta_end, self.noise_steps)
@@ -104,7 +104,8 @@ class Diffusion:
                     noise = torch.randn_like(x)
                 else:
                     noise = torch.zeros_like(x)
-                x = 1 / torch.sqrt(alpha) * (x - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * predicted_noise) + torch.sqrt(beta) * noise
+                x += torch.sqrt(beta) * noise
+                x = 1 / torch.sqrt(alpha) * (x - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * predicted_noise)
         x = (x.clamp(-1, 1) + 1) / 2
         x = (x * 255).type(torch.uint8)
         return x
@@ -131,15 +132,15 @@ class Diffusion:
             with torch.autocast("cuda") and (torch.inference_mode() if not train else torch.enable_grad()):
                 
                 images = images.type(torch.FloatTensor).to(self.device)
-                # labels = labels.to(self.device)
-                # labels = self.cap_reduce(labels)
+                labels = labels.to(self.device)
+                labels = self.cap_reduce(labels)
                 
                 t = self.sample_timesteps(images.shape[0]).to(self.device)
                 
                 x_t, noise = self.noise_images(images, t)
-                # if np.random.random() < 0.15:
-                labels = None
-                predicted_noise = self.model(x_t, t)
+                if np.random.random() < 0.15:
+                    labels = None
+                predicted_noise = self.model(x_t, t, labels)
                 loss = self.mse(noise, predicted_noise)
                 avg_loss += loss.cpu().detach()
             if train:
@@ -159,28 +160,28 @@ class Diffusion:
                 break
         return avg_loss.mean().item()
 
-    # def log_images(self, epoch):
-    #     "Log images to save them to disk"
-    #     labels1 = self.cap_enc(['A zebra walking on the street']).type(torch.float32).to(self.device)
-    #     labels2 = self.cap_enc(['A car on grass']).type(torch.float32).to(self.device)
-    #     labels = torch.cat([labels1, labels2])
-    #     labels = labels.reshape((2, 512))
-    #     sampled_images = self.sample(use_ema=False, labels=labels)
-    #     sampled_images = sampled_images.permute((0, 2, 3, 1))
-    #     sampled_images = sampled_images.cpu().detach().numpy()
-    #     plt.imsave(f'img1_e{epoch}_full.png', sampled_images[0])
-    #     plt.imsave(f'img2_e{epoch}_full.png',sampled_images[1])
+    def log_images(self, epoch):
+        "Log images to save them to disk"
+        labels1 = self.cap_enc(['Man walking']).type(torch.float32).to(self.device)
+        labels2 = self.cap_enc(['Horse']).type(torch.float32).to(self.device)
+        labels = torch.stack([labels1, labels2])
+        labels = labels.reshape((2, 512))
+        sampled_images = self.sample(use_ema=False, labels=labels)
+        sampled_images = sampled_images.permute((0, 2, 3, 1))
+        sampled_images = sampled_images.cpu().detach().numpy()
+        plt.imsave(f'img1_e{epoch}_full.png', sampled_images[0])
+        plt.imsave(f'img2_e{epoch}_full.png',sampled_images[1])
         
 
-    def load(self, model_cpkt_path, model_ckpt="checkpt_e10.pt", ema_model_ckpt="ema_checkpt_e10.pt"):
+    def load(self, model_cpkt_path, model_ckpt="checkpt_e6.pt", ema_model_ckpt="ema_checkpt_e6.pt"):
         self.model.load_state_dict(torch.load(os.path.join(model_cpkt_path, model_ckpt)))
         self.ema_model.load_state_dict(torch.load(os.path.join(model_cpkt_path, ema_model_ckpt)))
 
     def save_model(self, run_name, epoch=-1):
         "Save model locally"
-        torch.save(self.model.state_dict(), os.path.join("models", run_name, f"uncon_checkpt_e{epoch}.pt"))
-        torch.save(self.ema_model.state_dict(), os.path.join("models", run_name, f"uncon_ema_checkpt_e{epoch}.pt"))
-        torch.save(self.optimizer.state_dict(), os.path.join("models", run_name, f"uncon_optim_e{epoch}.pt"))
+        torch.save(self.model.state_dict(), os.path.join("models", run_name, f"checkpt_e{epoch}.pt"))
+        torch.save(self.ema_model.state_dict(), os.path.join("models", run_name, f"ema_checkpt_e{epoch}.pt"))
+        torch.save(self.optimizer.state_dict(), os.path.join("models", run_name, f"optim_e{epoch}.pt"))
         
 
     def prepare(self, args):

@@ -33,6 +33,8 @@ class EMA:
 
     def reset_parameters(self, ema_model, model):
         ema_model.load_state_dict(model.state_dict())
+        
+
 
 
 class SelfAttention(nn.Module):
@@ -53,10 +55,27 @@ class SelfAttention(nn.Module):
         size2 = x.shape[3]
         x = x.view(-1, self.channels, size1 * size2).swapaxes(1, 2)
         x_ln = self.ln(x)
+        
         attention_value, _ = self.mha(x_ln, x_ln, x_ln)
         attention_value = attention_value + x
         attention_value = self.ff_self(attention_value) + attention_value
         return attention_value.swapaxes(2, 1).view(-1, self.channels, size1, size2)
+    
+    def to_patches(self, x):
+        p = self.patch_size
+        B, C, H, W = x.shape
+
+        x = x.permute(0, 2, 3, 1).reshape(B, H, W//p, C*p)
+        x = x.permute(0, 2, 1, 3).reshape(B, W//p, H//p, C*p*p)
+        return x.permute(0, 3, 2, 1)
+
+    def from_patches(self, x):
+        p = self.patch_size
+        B, C, H, W = x.shape
+
+        x = x.permute(0,3,2,1).reshape(B, W, H*p, C//p)
+        x = x.permute(0,2,1,3).reshape(B, H*p, W*p, C//(p*p))
+        return x.permute(0, 3, 1, 2)
 
 
 class DoubleConv(nn.Module):

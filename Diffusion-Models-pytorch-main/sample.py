@@ -9,7 +9,7 @@ from ddpm_conditional import Diffusion
 config = SimpleNamespace(    
     run_name = "text_con_diff",
     epochs = 40,
-    noise_steps=50,
+    noise_steps=1000,
     seed = 42,
     batch_size = 12,
     img_size = 80,
@@ -26,5 +26,5 @@ config = SimpleNamespace(
 
 diff = Diffusion(noise_steps=config.noise_steps , img_size1=config.img_size, img_size2=config.img_size)
 
-diff.prepare(config)
-diff.fit(config)
+diff.load('/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/Multi-caption-Diffusion/Diffusion-Models-pytorch-main/models/text_con_diff', 'checkpt_e13.pt', 'ema_checkpt_e13.pt')
+diff.log_images(13)
