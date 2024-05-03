@@ -134,7 +134,8 @@ class UNet(nn.Module):
         super().__init__()
         self.time_dim = time_dim
         self.remove_deep_conv = remove_deep_conv
-        self.inc = DoubleConv(c_in, 64)
+        #self.dense = nn.Linear(1, 512)
+        self.inc = (c_in, 64)
         self.down1 = Down(64, 128)
         self.sa1 = SelfAttention(128)
         self.down2 = Down(128, 256)
@@ -170,6 +171,7 @@ class UNet(nn.Module):
         return pos_enc
 
     def unet_forwad(self, x, t):
+        #x = self.dense(x)
         x1 = self.inc(x)
         x2 = self.down1(x1, t)
         x2 = self.sa1(x2)
