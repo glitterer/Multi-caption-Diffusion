@@ -85,22 +85,15 @@ class Diffusion:
         model = self.ema_model if use_ema else self.model
         n = len(labels)
         logging.info(f"Sampling {n} new images....")
-        import random; random.seed=1
-        torch.manual_seed(1)
         model.eval()
-        # dataloader = get_train_data(1)
-        # image = next(iter(dataloader))[0].to(self.device)
-        # torchvision.utils.save_image(image, "original.jpg")
         with torch.inference_mode():
             labels = self.cap_reduce(labels).reshape((1,256)).to(self.device)
             x = torch.randn((n, self.c_in, self.img_size1, self.img_size2)).to(self.device)
-            
-            torchvision.utils.save_image(x, "noised.jpg")
-            for i in progress_bar(reversed(range(1, 998)), total=998-1, leave=False):
+            for i in progress_bar(reversed(range(1, self.noise_steps)), total=self.noise_steps-1, leave=False):
                 t = (torch.ones(n) * i).long().to(self.device)
     
                 
-                predicted_noise = model(x, t, None)
+                predicted_noise = model(x, t, labels)
                 if cfg_scale > 0:
                     uncond_predicted_noise = model(x, t, None)
                     predicted_noise = torch.lerp(uncond_predicted_noise, predicted_noise, cfg_scale)
@@ -111,8 +104,7 @@ class Diffusion:
                     noise = torch.randn_like(x)
                 else:
                     noise = torch.zeros_like(x)
-                x += torch.sqrt(beta) * noise
-                x = 1 / torch.sqrt(alpha) * (x - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * predicted_noise)
+                x = 1 / torch.sqrt(alpha) * (x - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * predicted_noise) + torch.sqrt(beta) * noise
         x = (x.clamp(-1, 1) + 1) / 2
         x = (x * 255).type(torch.uint8)
         return x
