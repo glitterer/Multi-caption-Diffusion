@@ -26,9 +26,9 @@ from coco_dataloader import get_train_data, get_val_data
 config = SimpleNamespace(    
     run_name = "text_con_ddpm",
     epochs = 40,
-    noise_steps=50,
+    noise_steps=1000,
     seed = 42,
-    batch_size = 8,
+    batch_size = 24,
     img_size = 80,
     text_embed_length = 256,
     train_folder = "train",
@@ -46,7 +46,7 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=log
 
 
 class Diffusion:
-    def __init__(self, noise_steps=50, beta_start=1e-4, beta_end=0.02, img_size1=80, img_size2=80, text_embed_length=256, c_in=3, c_out=3, device="cuda", **kwargs):
+    def __init__(self, noise_steps=50, beta_start=1e-4, beta_end=0.02, img_size1=128, img_size2=128, text_embed_length=256, c_in=3, c_out=3, device="cuda", **kwargs):
         self.noise_steps = noise_steps
         self.beta_start = beta_start
         self.beta_end = beta_end
@@ -81,19 +81,26 @@ class Diffusion:
         return noisy_img, Ɛ
     
     @torch.inference_mode()
-    def sample(self, use_ema, labels, cfg_scale=3):
+    def sample(self, use_ema, labels, cfg_scale=0):
         model = self.ema_model if use_ema else self.model
         n = len(labels)
         logging.info(f"Sampling {n} new images....")
+        import random; random.seed=1
+        torch.manual_seed(1)
         model.eval()
+        # dataloader = get_train_data(1)
+        # image = next(iter(dataloader))[0].to(self.device)
+        # torchvision.utils.save_image(image, "original.jpg")
         with torch.inference_mode():
-            labels = self.cap_reduce(labels).to(self.device)
+            labels = self.cap_reduce(labels).reshape((1,256)).to(self.device)
             x = torch.randn((n, self.c_in, self.img_size1, self.img_size2)).to(self.device)
-            for i in progress_bar(reversed(range(1, self.noise_steps)), total=self.noise_steps-1, leave=False):
+            
+            torchvision.utils.save_image(x, "noised.jpg")
+            for i in progress_bar(reversed(range(1, 998)), total=998-1, leave=False):
                 t = (torch.ones(n) * i).long().to(self.device)
     
                 
-                predicted_noise = model(x, t, labels)
+                predicted_noise = model(x, t, None)
                 if cfg_scale > 0:
                     uncond_predicted_noise = model(x, t, None)
                     predicted_noise = torch.lerp(uncond_predicted_noise, predicted_noise, cfg_scale)
@@ -125,9 +132,11 @@ class Diffusion:
         pbar = progress_bar(self.train_dataloader)
         if train:
             batches = len(self.train_dataloader)
+            stop = int(batches/2)
         else:
             batches = len(self.val_dataloader)
-        stop = int(batches/2)
+            stop = int(batches)
+        
         for i, (images, labels) in enumerate(pbar):
             with torch.autocast("cuda") and (torch.inference_mode() if not train else torch.enable_grad()):
                 
@@ -141,19 +150,19 @@ class Diffusion:
                 if np.random.random() < 0.15:
                     labels = None
                 predicted_noise = self.model(x_t, t, labels)
-                loss = self.mse(noise, predicted_noise)
+                loss: torch.Tensor = self.mse(noise, predicted_noise)
                 avg_loss += loss.cpu().detach()
             if train:
                 self.train_step(loss)
-                print("train_mse " + str(loss.item()) + " learning_rate "+ str(self.scheduler.get_last_lr()[0]) + " batch:" + str(i) + " of 5174")
+                print("train_mse " + str(loss.item()) + " learning_rate "+ str(self.scheduler.get_last_lr()[0]) + " batch:" + str(i) + " of " + str(stop))
             pbar.comment = f"MSE={loss.item():2.3f}"
             
             if i == stop:
                 fname = config.run_name + '.txt'
                 if train:
-                    message = "Average loss of train:" + str(avg_loss.mean())
+                    message = "Average loss of train:" + str(avg_loss.mean().item()/config.batch_size)
                 else:
-                    message = "Average loss of val:" + str(avg_loss.mean())
+                    message = " Average loss of val:" + str(avg_loss.mean().item()) + '\n'
                 with open(fname, 'a+') as f:
                     f.write(message)
                     f.close()
@@ -162,15 +171,12 @@ class Diffusion:
 
     def log_images(self, epoch):
         "Log images to save them to disk"
-        labels1 = self.cap_enc(['Man walking']).type(torch.float32).to(self.device)
-        labels2 = self.cap_enc(['Horse']).type(torch.float32).to(self.device)
-        labels = torch.stack([labels1, labels2])
-        labels = labels.reshape((2, 512))
+        labels1 = self.cap_enc(['Cow on the beach']).type(torch.float32).to(self.device)
+        labels = torch.stack([labels1])
         sampled_images = self.sample(use_ema=False, labels=labels)
         sampled_images = sampled_images.permute((0, 2, 3, 1))
         sampled_images = sampled_images.cpu().detach().numpy()
         plt.imsave(f'img1_e{epoch}_full.png', sampled_images[0])
-        plt.imsave(f'img2_e{epoch}_full.png',sampled_images[1])
         
 
     def load(self, model_cpkt_path, model_ckpt="checkpt_e6.pt", ema_model_ckpt="ema_checkpt_e6.pt"):

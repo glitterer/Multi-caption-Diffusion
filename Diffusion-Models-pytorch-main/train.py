@@ -9,10 +9,10 @@ from ddpm_conditional import Diffusion
 config = SimpleNamespace(    
     run_name = "text_con_diff",
     epochs = 40,
-    noise_steps=50,
+    noise_steps=600,
     seed = 42,
     batch_size = 12,
-    img_size = 80,
+    img_size = 128,
     num_classes = 10,
     train_folder = "train",
     val_folder = "test",
