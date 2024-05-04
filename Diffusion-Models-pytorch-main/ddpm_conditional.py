@@ -25,7 +25,7 @@ from cifar_dataloader import get_train_data, get_val_data
 
 
 config = SimpleNamespace(    
-    run_name = "cifar_class_ddpm",
+    run_name = "text_clip_1_con_diff",
     epochs = 80,
     noise_steps=1000,
     seed = 42,
