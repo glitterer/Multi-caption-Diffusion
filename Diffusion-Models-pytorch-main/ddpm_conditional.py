@@ -24,11 +24,11 @@ from coco_dataloader import get_train_data, get_val_data
 
 
 config = SimpleNamespace(    
-    run_name = "text_con_ddpm",
-    epochs = 40,
+    run_name = "text_image_con_ddpm",
+    epochs = 20,
     noise_steps=1000,
     seed = 42,
-    batch_size = 24,
+    batch_size = 8,
     img_size = 80,
     text_embed_length = 256,
     train_folder = "train",
@@ -46,7 +46,7 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=log
 
 
 class Diffusion:
-    def __init__(self, noise_steps=50, beta_start=1e-4, beta_end=0.02, img_size1=128, img_size2=128, text_embed_length=256, c_in=3, c_out=3, device="cuda", **kwargs):
+    def __init__(self, noise_steps=50, beta_start=1e-4, beta_end=0.02, img_size1=80, img_size2=80, text_embed_length=256, c_in=3, c_out=3, device="cuda", **kwargs):
         self.noise_steps = noise_steps
         self.beta_start = beta_start
         self.beta_end = beta_end
@@ -54,7 +54,7 @@ class Diffusion:
         self.beta = self.prepare_noise_schedule().to(device)
         self.alpha = 1. - self.beta
         self.alpha_hat = torch.cumprod(self.alpha, dim=0)
-        self.cap_reduce = torch.nn.Sequential(torch.nn.Linear(512, 256), torch.nn.LeakyReLU()).to(device)
+        self.cap_reduce = torch.nn.Sequential(torch.nn.Linear(1024, 256), torch.nn.LeakyReLU()).to(device)
         self.img_size1 = img_size1
         self.img_size2 = img_size2
         self.model = UNet_conditional(c_in, c_out, text_embed_length = text_embed_length, **kwargs).to(device)
@@ -62,7 +62,7 @@ class Diffusion:
         self.device = device
         self.c_in = c_in
         self.text_embed_length = text_embed_length
-        self.cap_enc = clip_text_embedding
+        # self.cap_enc = clip_text_embedding
 
     def prepare_noise_schedule(self):
         return torch.linspace(self.beta_start, self.beta_end, self.noise_steps)
@@ -205,7 +205,8 @@ class Diffusion:
             
             
             # self.log_images(epoch)
-            self.save_model(run_name=args.run_name, epoch=epoch)
+            if epoch%5 == 0:
+                self.save_model(run_name=args.run_name, epoch=epoch)
 
         # save model
         self.save_model(run_name=args.run_name, epoch=epoch)

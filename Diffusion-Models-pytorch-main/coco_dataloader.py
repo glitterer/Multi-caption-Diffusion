@@ -5,7 +5,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 import os
 import json
-cwd = '/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/data/'
+cwd = '/home/rdemello/MSCOCO/'
 
 class CustomCocoCaptions(dset.CocoCaptions):
     def _load_target(self, id: int):
@@ -14,17 +14,17 @@ class CustomCocoCaptions(dset.CocoCaptions):
         return captions[0]
 
 def get_train_data(batchsize:int):
-    train_data = CustomCocoCaptions(root = cwd+'train2014',
-                        annFile = cwd+'annotations/train_clip_text.json',
+    train_data = CustomCocoCaptions(root = cwd+'COCO2014trainimg/train2014',
+                        annFile = cwd+'COCO2014trainValCap/annotations/captions_train2014.json',
                         transform=transforms.Compose([transforms.ToTensor(),
-                                                     transforms.Resize((128,128))]))
+                                                     transforms.Resize((80,80))]))
     
     train_dl = DataLoader(train_data, batch_size=batchsize, shuffle=True)
     return train_dl
 
 def get_val_data(batchsize: int):
-    val_data = CustomCocoCaptions(root = cwd+'val2014',
-                        annFile = cwd+'annotations/val_clip_text.json',
+    val_data = CustomCocoCaptions(root = cwd+'COCO2014valimg/val2014',
+                        annFile = cwd+'COCO2014trainValCap/annotations/captions_val2014.json',
                         transform=transforms.Compose([transforms.ToTensor(),
                                                      transforms.Resize((80,80))]))
     val_dl = DataLoader(val_data, batch_size=batchsize, shuffle=True)
