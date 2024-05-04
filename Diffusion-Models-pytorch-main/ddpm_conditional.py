@@ -20,16 +20,17 @@ from fastprogress import progress_bar
 from Embedding import clip_text_embedding, clip_image_embedding, t5_embedding
 from utils import *
 from modules import UNet_conditional, EMA
-from coco_dataloader import get_train_data, get_val_data
+# from coco_dataloader import get_train_data, get_val_data
+from cifar_dataloader import get_train_data, get_val_data
 
 
 config = SimpleNamespace(    
-    run_name = "text_image_con_ddpm",
-    epochs = 20,
+    run_name = "cifar_class_ddpm",
+    epochs = 80,
     noise_steps=1000,
     seed = 42,
-    batch_size = 8,
-    img_size = 80,
+    batch_size = 64,
+    img_size = 32,
     text_embed_length = 256,
     train_folder = "train",
     val_folder = "test",
@@ -39,6 +40,7 @@ config = SimpleNamespace(
     fp16 = True,
     log_every_epoch = 10,
     num_workers=10,
+    num_classes=10,
     lr = 5e-3)
 
 
@@ -46,7 +48,7 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=log
 
 
 class Diffusion:
-    def __init__(self, noise_steps=50, beta_start=1e-4, beta_end=0.02, img_size1=80, img_size2=80, text_embed_length=256, c_in=3, c_out=3, device="cuda", **kwargs):
+    def __init__(self, noise_steps=50, beta_start=1e-4, beta_end=0.02, img_size1=32, img_size2=32, text_embed_length=256, c_in=3, c_out=3, device="cuda", num_class=1, **kwargs):
         self.noise_steps = noise_steps
         self.beta_start = beta_start
         self.beta_end = beta_end
@@ -54,7 +56,7 @@ class Diffusion:
         self.beta = self.prepare_noise_schedule().to(device)
         self.alpha = 1. - self.beta
         self.alpha_hat = torch.cumprod(self.alpha, dim=0)
-        self.cap_reduce = torch.nn.Sequential(torch.nn.Linear(1024, 256), torch.nn.LeakyReLU()).to(device)
+        # self.cap_reduce = torch.nn.Sequential(torch.nn.Linear(1024, 256), torch.nn.LeakyReLU()).to(device)
         self.img_size1 = img_size1
         self.img_size2 = img_size2
         self.model = UNet_conditional(c_in, c_out, text_embed_length = text_embed_length, **kwargs).to(device)
@@ -62,6 +64,8 @@ class Diffusion:
         self.device = device
         self.c_in = c_in
         self.text_embed_length = text_embed_length
+        self.num_class = num_class
+        self.label_emb = nn.Embedding(num_class, text_embed_length).to(self.device)
         # self.cap_enc = clip_text_embedding
 
     def prepare_noise_schedule(self):
@@ -91,8 +95,6 @@ class Diffusion:
             x = torch.randn((n, self.c_in, self.img_size1, self.img_size2)).to(self.device)
             for i in progress_bar(reversed(range(1, self.noise_steps)), total=self.noise_steps-1, leave=False):
                 t = (torch.ones(n) * i).long().to(self.device)
-    
-                
                 predicted_noise = model(x, t, labels)
                 if cfg_scale > 0:
                     uncond_predicted_noise = model(x, t, None)
@@ -124,7 +126,7 @@ class Diffusion:
         pbar = progress_bar(self.train_dataloader)
         if train:
             batches = len(self.train_dataloader)
-            stop = int(batches/2)
+            stop = int(batches)
         else:
             batches = len(self.val_dataloader)
             stop = int(batches)
@@ -134,7 +136,8 @@ class Diffusion:
                 
                 images = images.type(torch.FloatTensor).to(self.device)
                 labels = labels.to(self.device)
-                labels = self.cap_reduce(labels)
+                labels = self.label_emb(labels)
+                # labels = self.cap_reduce(labels)
                 
                 t = self.sample_timesteps(images.shape[0]).to(self.device)
                 

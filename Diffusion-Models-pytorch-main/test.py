@@ -1,5 +1,6 @@
 from Embedding import clip_text_embedding, clip_image_embedding, t5_embedding
-from coco_dataloader import get_train_data, get_val_data, load_annotations
+# from coco_dataloader import get_train_data, get_val_data, load_annotations
+from cifar_dataloader import get_train_data, get_val_data
 import matplotlib.pyplot as plt
 import json
 import tqdm
@@ -7,14 +8,15 @@ from tqdm import tqdm
 import torch
 from fastprogress import progress_bar
 from PIL import Image
+import matplotlib.pyplot as plt
 
 # data = load_annotations(True)
 # ann = data.get('annotations')
 # img = data.get('images')
 # all_images = {}
 
-# train_path = '/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/data/train2014/'
-# val_path = '/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/data/val2014/'
+train_path = '/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/data/cifar10/cifar10'
+val_path = '/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/data/cifar10/cifar10'
 # batch = []
 # batch_size = 3000
 # max = len(img)
@@ -151,9 +153,11 @@ train = get_train_data(1)
 pbar = progress_bar(train)
         
 for i, (images, cap) in enumerate(pbar):
-    if cap.shape != torch.Size([1,512]):
-        print(cap.shape)
-        aaaa
+    print(cap)
+    images = images.reshape((3,32,32))
+    plt.imshow(  images.permute(1, 2, 0)  )
+    plt.show()
+    
     
 #     image = image.permute((0, 2, 3, 1))
 #     plt.imshow(image[0].numpy())

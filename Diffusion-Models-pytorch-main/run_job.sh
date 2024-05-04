@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name="ddpm_2_cap"
+#SBATCH --job-name="cifar_con_ddpm"
 #SBATCH --partition=gpus
 #SBATCH --mem=120G
 #SBATCH --cpus-per-task=4
