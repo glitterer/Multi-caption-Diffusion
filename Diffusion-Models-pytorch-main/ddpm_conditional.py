@@ -124,12 +124,12 @@ class Diffusion:
         if train: self.model.train()
         else: self.model.eval()
         pbar = progress_bar(self.train_dataloader)
-        if train:
-            batches = len(self.train_dataloader)
-            stop = int(batches)
-        else:
-            batches = len(self.val_dataloader)
-            stop = int(batches)
+        # if train:
+        #     batches = len(self.train_dataloader)
+        #     stop = int(batches)
+        # else:
+        #     batches = len(self.val_dataloader)
+        #     stop = int(batches)
         
         for i, (images, labels) in enumerate(pbar):
             with torch.autocast("cuda") and (torch.inference_mode() if not train else torch.enable_grad()):
@@ -152,16 +152,15 @@ class Diffusion:
                 print("train_mse " + str(loss.item()) + " learning_rate "+ str(self.scheduler.get_last_lr()[0]) + " batch:" + str(i) + " of " + str(stop))
             pbar.comment = f"MSE={loss.item():2.3f}"
             
-            if i == stop:
-                fname = config.run_name + '.txt'
-                if train:
-                    message = "Average loss of train:" + str(avg_loss.mean().item()/config.batch_size)
-                else:
-                    message = " Average loss of val:" + str(avg_loss.mean().item()) + '\n'
-                with open(fname, 'a+') as f:
-                    f.write(message)
-                    f.close()
-                break
+            # if i == stop:
+        fname = config.run_name + '.txt'
+        if train:
+            message = "Average loss of train:" + str(avg_loss.mean().item()/config.batch_size)
+        else:
+            message = " Average loss of val:" + str(avg_loss.mean().item()) + '\n'
+        with open(fname, 'a+') as f:
+            f.write(message)
+            f.close()
         return avg_loss.mean().item()
 
     def log_images(self, epoch):
