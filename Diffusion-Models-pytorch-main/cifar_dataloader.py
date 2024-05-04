@@ -9,8 +9,8 @@ from typing import Any, Callable, List, Optional, Tuple
 from pycocotools.coco import COCO
 
 
-cwd = '/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/data/cifar10/cifar10/'
-# cwd = '/home/rdemello/MSCOCO/'
+# cwd = '/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/data/cifar10/cifar10/'
+cwd = '/home/rdemello/cifar10/cifar10/'
 
 def get_train_data(batchsize:int):
     train_transforms = transforms.Compose([
