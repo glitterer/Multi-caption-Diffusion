@@ -34,8 +34,8 @@ class CustomCocoCaptions(dset.CocoCaptions):
             image_out, target1 = self.transforms(image, target1)
             _, target2 = self.transforms(image, target2)
         
-        # uses stack to combine lists of image and text captions --> target_out [2, 512]
-        target_out = torch.stack([torch.FloatTensor(target1['caption']), torch.FloatTensor(target2['caption'])], dim=0)
+        # uses cat to combine lists of image and text captions --> target_out [1, 1024]
+        target_out = torch.cat([torch.FloatTensor(target1['caption']), torch.FloatTensor(target2['caption'])], dim=0)
 
         return image_out, target_out
     
