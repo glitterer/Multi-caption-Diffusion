@@ -9,14 +9,19 @@ import torch
 from fastprogress import progress_bar
 from PIL import Image
 import matplotlib.pyplot as plt
+from utils import create_embed_json
 
 # data = load_annotations(True)
 # ann = data.get('annotations')
 # img = data.get('images')
 # all_images = {}
 
-train_path = '/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/data/cifar10/cifar10'
-val_path = '/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/data/cifar10/cifar10'
+# train_path = '/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/data/cifar10/cifar10/train'
+# val_path = '/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/data/cifar10/cifar10/test'
+
+# create_embed_json(train_path, 'train_cifar')
+# create_embed_json(val_path, 'val_cifar')
+
 # batch = []
 # batch_size = 3000
 # max = len(img)
@@ -152,8 +157,9 @@ val_path = '/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/d
 train = get_train_data(1)
 pbar = progress_bar(train)
         
-for i, (images, cap) in enumerate(pbar):
-    print(cap)
+for i, (images, ret_class, caption) in enumerate(pbar):
+    print(ret_class)
+    print(caption)
     images = images.reshape((3,32,32))
     plt.imshow(  images.permute(1, 2, 0)  )
     plt.show()

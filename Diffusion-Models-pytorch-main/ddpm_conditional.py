@@ -56,7 +56,7 @@ class Diffusion:
         self.beta = self.prepare_noise_schedule().to(device)
         self.alpha = 1. - self.beta
         self.alpha_hat = torch.cumprod(self.alpha, dim=0)
-        # self.cap_reduce = torch.nn.Sequential(torch.nn.Linear(1024, 256), torch.nn.LeakyReLU()).to(device)
+        self.cap_reduce = torch.nn.Sequential(torch.nn.Linear(512, 256), torch.nn.LeakyReLU()).to(device)
         self.img_size1 = img_size1
         self.img_size2 = img_size2
         self.model = UNet_conditional(c_in, c_out, text_embed_length = text_embed_length, **kwargs).to(device)
@@ -131,14 +131,15 @@ class Diffusion:
         #     batches = len(self.val_dataloader)
         #     stop = int(batches)
         
-        for i, (images, labels) in enumerate(pbar):
+        for i, (images, classes, labels) in enumerate(pbar):
             with torch.autocast("cuda") and (torch.inference_mode() if not train else torch.enable_grad()):
                 
                 images = images.type(torch.FloatTensor).to(self.device)
                 labels = labels.to(self.device)
-                labels = self.label_emb(labels)
-                # labels = self.cap_reduce(labels)
-                
+                classes = classes.to(self.device)
+                classes = self.label_emb(classes)
+                labels = self.cap_reduce(labels)
+                labels = labels + classes
                 t = self.sample_timesteps(images.shape[0]).to(self.device)
                 
                 x_t, noise = self.noise_images(images, t)

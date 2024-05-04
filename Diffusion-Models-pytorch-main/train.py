@@ -5,9 +5,9 @@ from ddpm_conditional import Diffusion
 
 
 # This is a very simple example, for more advanced training, see `ddp_conditional.py`
-
+# text_clip_1 = text -> 256, class -> 256, text + class
 config = SimpleNamespace(    
-    run_name = "text_con_diff",
+    run_name = "text_clip_1_con_diff",
     epochs = 80,
     noise_steps=1000,
     seed = 42,

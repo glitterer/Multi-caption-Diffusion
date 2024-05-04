@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name="cifar_con_ddpm"
+#SBATCH --job-name="cifar_2_con_1_ddpm"
 #SBATCH --partition=gpus
 #SBATCH --mem=120G
 #SBATCH --cpus-per-task=4
@@ -9,7 +9,7 @@
 #SBATCH -o job_%x_%j.o
 #SBATCH --nodes=1
 #SBATCH --exclude=gpu[1601-1605]
-#SBATCH --gpus-per-node=2
+#SBATCH --gpus-per-node=1
 
 source activate ~/miniconda3/envs/DLproject
 export PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True'

@@ -54,6 +54,7 @@ def clip_image_embedding(images):
     all_img = []
     for image in images:
         image_input = preprocess(image).unsqueeze(0).to(device)
+        
         all_img.append(image_input)
     all_img = torch.stack(all_img)
     all_img = all_img.squeeze()

@@ -7,6 +7,11 @@ import numpy as np
 from PIL import Image
 from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
+from os import listdir
+from os.path import isfile, join
+from Embedding import clip_image_embedding
+from tqdm import tqdm
+import json
 
 
 
@@ -49,3 +54,40 @@ def mk_folders(run_name):
     os.makedirs("results", exist_ok=True)
     os.makedirs(os.path.join("models", run_name), exist_ok=True)
     os.makedirs(os.path.join("results", run_name), exist_ok=True)
+
+def create_embed_json(path:str, json_name:str):
+    '''
+    Takes in the path to Cifar directory, and creates a json including file name, class and clip image embedding
+    '''
+    classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+    json_file = []
+    for cur_class in classes:
+        cwd = path + '/' + cur_class
+        batch_size = 2000
+        batch_fname = []
+        batch_img = []
+        all_files = len(listdir(cwd))
+        i = 0
+        j = 0
+        for file in tqdm(listdir(cwd)):
+            i += 1
+            j += 1
+            cur_image = Image.open(cwd + '/' + file)
+            
+            batch_fname.append(file)
+            batch_img.append(cur_image)
+            if i == batch_size or j == all_files:
+                embed_images = clip_image_embedding(batch_img)
+                for k in range(len(embed_images)):
+                    cur_dict = {}
+                    cur_dict['file_name'] = batch_fname[k]
+                    cur_dict['class'] = cur_class
+                    cur_dict['caption'] = embed_images[k].tolist()
+                    json_file.append(cur_dict)
+                i = 0
+                batch_img.clear()
+                batch_fname.clear()
+    out_name = json_name + '.json'
+    print(len(json_file), "LEngth")
+    with open(out_name, "w") as outfile:
+        json.dump(json_file, outfile)
