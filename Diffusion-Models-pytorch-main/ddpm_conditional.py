@@ -25,7 +25,7 @@ from cifar_dataloader import get_train_data, get_val_data
 
 
 config = SimpleNamespace(    
-    run_name = "text_clip_1_con_diff",
+    run_name = "cifar_clip_diff",
     epochs = 80,
     noise_steps=1000,
     seed = 42,
@@ -65,7 +65,7 @@ class Diffusion:
         self.c_in = c_in
         self.text_embed_length = text_embed_length
         self.num_class = num_class
-        self.label_emb = nn.Embedding(num_class, text_embed_length).to(self.device)
+        # self.label_emb = nn.Embedding(num_class, text_embed_length).to(self.device)
         # self.cap_enc = clip_text_embedding
 
     def prepare_noise_schedule(self):
@@ -136,10 +136,10 @@ class Diffusion:
                 
                 images = images.type(torch.FloatTensor).to(self.device)
                 labels = labels.to(self.device)
-                classes = classes.to(self.device)
-                classes = self.label_emb(classes)
+                # classes = classes.to(self.device)
+                # classes = self.label_emb(classes)
                 labels = self.cap_reduce(labels)
-                labels = labels + classes
+                # labels = labels + classes
                 t = self.sample_timesteps(images.shape[0]).to(self.device)
                 
                 x_t, noise = self.noise_images(images, t)
