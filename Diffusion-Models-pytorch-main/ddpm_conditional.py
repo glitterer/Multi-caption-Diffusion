@@ -25,11 +25,11 @@ from cifar_dataloader import get_train_data, get_val_data
 
 
 config = SimpleNamespace(    
-    run_name = "class",
+    run_name = "test",
     epochs = 300,
     noise_steps=1000,
     seed = 42,
-    batch_size = 72,
+    batch_size = 64,
     img_size = 32,
     text_embed_length = 256,
     train_folder = "train",

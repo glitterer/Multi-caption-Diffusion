@@ -8,7 +8,7 @@ from ddpm_conditional import Diffusion
 # text_clip_1 = text -> 256, class -> 256, text + class
 # text_clip_2 = text -> 256, class -> 256, cat(text,cat) -> 512, cat -> 256
 config = SimpleNamespace(    
-    run_name = "class",
+    run_name = "test",
     epochs = 300,
     noise_steps=1000,
     seed = 42,
