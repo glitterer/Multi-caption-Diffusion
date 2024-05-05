@@ -25,7 +25,7 @@ from cifar_dataloader import get_train_data, get_val_data
 
 
 config = SimpleNamespace(    
-    run_name = "cifar1",
+    run_name = "cifar2",
     epochs = 300,
     noise_steps=1000,
     seed = 42,
@@ -194,9 +194,9 @@ class Diffusion:
 
     def save_model(self, run_name, epoch=-1):
         "Save model locally"
-        torch.save(self.model.state_dict(), os.path.join("last_models", run_name, f"checkpt_1.pt"))
-        torch.save(self.ema_model.state_dict(), os.path.join("last_models", run_name, f"ema_checkpt_1.pt"))
-        torch.save(self.optimizer.state_dict(), os.path.join("last_models", run_name, f"optim_1.pt"))
+        torch.save(self.model.state_dict(), os.path.join("last_models", run_name, f"checkpt_2.pt"))
+        torch.save(self.ema_model.state_dict(), os.path.join("last_models", run_name, f"ema_checkpt_2.pt"))
+        torch.save(self.optimizer.state_dict(), os.path.join("last_models", run_name, f"optim_2.pt"))
         
 
     def prepare(self, args):

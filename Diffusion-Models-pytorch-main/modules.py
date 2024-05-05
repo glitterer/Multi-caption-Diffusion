@@ -202,7 +202,7 @@ class UNet(nn.Module):
 class UNet_conditional(UNet):
     def __init__(self, c_in=3, c_out=3, time_dim=256, text_embed_length=None, max_embed=100, **kwargs):
         super().__init__(c_in, c_out, time_dim, **kwargs)
-        self.combine_emb = torch.nn.Sequential(torch.nn.Linear(512, 256), torch.nn.LeakyReLU())
+        # self.combine_emb = torch.nn.Sequential(torch.nn.Linear(512, 256), torch.nn.LeakyReLU())
         self.label_emb = nn.Embedding(10, text_embed_length)
         self.cap_reduce = torch.nn.Sequential(torch.nn.Linear(512, 256), torch.nn.LeakyReLU())
 
@@ -215,8 +215,9 @@ class UNet_conditional(UNet):
         if y is not None: # unconditioned P(x|t)
             y = self.label_emb(y)
             z = self.cap_reduce(z)
-            y = torch.cat([y, z], 1)
-            y = self.combine_emb(y)
+            # y = torch.cat([y, z], 1)
+            # y = self.combine_emb(y)
+            t += z
             t += y
         return self.unet_forwad(x, t)
     
