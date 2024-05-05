@@ -25,7 +25,7 @@ from cifar_dataloader import get_train_data, get_val_data
 
 
 config = SimpleNamespace(    
-    run_name = "cifar_1",
+    run_name = "cifar_2",
     epochs = 300,
     noise_steps=1000,
     seed = 42,
@@ -65,7 +65,7 @@ class Diffusion:
         self.c_in = c_in
         self.text_embed_length = text_embed_length
         self.num_class = num_class
-        self.combine_emb = torch.nn.Sequential(torch.nn.Linear(512, 256), torch.nn.LeakyReLU()).to(device)
+        # self.combine_emb = torch.nn.Sequential(torch.nn.Linear(512, 256), torch.nn.LeakyReLU()).to(device)
         self.label_emb = nn.Embedding(num_class, text_embed_length).to(self.device)
         # self.cap_enc = clip_text_embedding
 
@@ -146,17 +146,17 @@ class Diffusion:
                 classes = classes.to(self.device)
                 classes = self.label_emb(classes)
                 labels = self.cap_reduce(labels)
-                labels = torch.cat([labels, classes], 1)
-                labels = self.combine_emb(labels)
+                # labels = torch.cat([labels, classes], 1)
+                # labels = self.combine_emb(labels)
                 
-                # classes = classes+labels
+                classes = classes+labels
                 
                 t = self.sample_timesteps(images.shape[0]).to(self.device)
                 
                 x_t, noise = self.noise_images(images, t)
                 if np.random.random() < 0.15:
-                    labels = None
-                predicted_noise = self.model(x_t, t, labels)
+                    classes = None
+                predicted_noise = self.model(x_t, t, classes)
                 loss: torch.Tensor = self.mse(noise, predicted_noise)
                 avg_loss += loss.cpu().detach()
             if train:
@@ -193,9 +193,9 @@ class Diffusion:
 
     def save_model(self, run_name, epoch=-1):
         "Save model locally"
-        torch.save(self.model.state_dict(), os.path.join("cifar_1_models", run_name, f"checkpt_e{epoch}.pt"))
-        torch.save(self.ema_model.state_dict(), os.path.join("cifar_1_models", run_name, f"ema_checkpt_e{epoch}.pt"))
-        torch.save(self.optimizer.state_dict(), os.path.join("cifar_1_models", run_name, f"optim_e{epoch}.pt"))
+        torch.save(self.model.state_dict(), os.path.join("cifar_2_models", run_name, f"checkpt_e{epoch}.pt"))
+        torch.save(self.ema_model.state_dict(), os.path.join("cifar_2_models", run_name, f"ema_checkpt_e{epoch}.pt"))
+        torch.save(self.optimizer.state_dict(), os.path.join("cifar_2_models", run_name, f"optim_e{epoch}.pt"))
         
 
     def prepare(self, args):
