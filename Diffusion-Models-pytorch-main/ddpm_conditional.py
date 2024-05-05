@@ -163,7 +163,7 @@ class Diffusion:
             if train:
                 self.train_step(loss)
                 print("train_mse " + str(loss.item()) + " learning_rate "+ str(self.scheduler.get_last_lr()[0]) + " batch:" + str(i))
-            pbar.comment = f"MSE={loss.item():2.3f}"
+            
             
             # if i == stop:
         fname = config.run_name + '.txt'
