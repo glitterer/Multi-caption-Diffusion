@@ -215,7 +215,7 @@ class UNet_conditional(UNet):
         if y is not None: # unconditioned P(x|t)
             y = self.label_emb(y)
             z = self.cap_reduce(z)
-            y = torch.cat(y,z)
+            y = torch.cat([y, z], 1)
             y = self.combine_emb(y)
             t += y
         return self.unet_forwad(x, t)
