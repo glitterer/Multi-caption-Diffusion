@@ -25,7 +25,7 @@ from cifar_dataloader import get_train_data, get_val_data
 
 
 config = SimpleNamespace(    
-    run_name = "test",
+    run_name = "class",
     epochs = 300,
     noise_steps=1000,
     seed = 42,
@@ -94,8 +94,10 @@ class Diffusion:
         logging.info(f"Sampling {n} new images....")
         model.eval()
         with torch.inference_mode():
-            labels = self.cap_reduce(labels).reshape((1,256)).to(self.device)
+            # labels = self.cap_reduce(labels).reshape((1,256)).to(self.device)
             # labels = self.label_emb(labels)
+            labels = labels.to(self.device)
+            labels = self.label_emb(labels).to(self.device)
             x = torch.randn((n, self.c_in, self.img_size1, self.img_size2)).to(self.device)
             for i in progress_bar(reversed(range(1, self.noise_steps)), total=self.noise_steps-1, leave=False):
                 t = (torch.ones(n) * i).long().to(self.device)
@@ -193,9 +195,9 @@ class Diffusion:
 
     def save_model(self, run_name, epoch=-1):
         "Save model locally"
-        torch.save(self.model.state_dict(), os.path.join("cifar_class_models", run_name, f"checkpt_e{epoch}.pt"))
-        torch.save(self.ema_model.state_dict(), os.path.join("cifar_class_models", run_name, f"ema_checkpt_e{epoch}.pt"))
-        torch.save(self.optimizer.state_dict(), os.path.join("cifar_class_models", run_name, f"optim_e{epoch}.pt"))
+        torch.save(self.model.state_dict(), os.path.join("cifar_class_models", run_name, f"checkpt_class.pt"))
+        torch.save(self.ema_model.state_dict(), os.path.join("cifar_class_models", run_name, f"ema_checkpt_class.pt"))
+        torch.save(self.optimizer.state_dict(), os.path.join("cifar_class_models", run_name, f"optim_class.pt"))
         
 
     def prepare(self, args):

@@ -29,5 +29,5 @@ diff = Diffusion(noise_steps=config.noise_steps , img_size1=config.img_size, img
 # diff.load('/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/models/text_con_diff', 'uncon_checkpt_e36.pt', 'uncon_ema_checkpt_e36.pt')
 # diff.log_images(0)
 
-diff.load('/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/Multi-caption-Diffusion/Diffusion-Models-pytorch-main/models/text_con_diff', 'checkpt_e70.pt', 'ema_checkpt_e70.pt')
-diff.log_images(5)
+diff.load('/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/cifar_models/cifar_base', 'checkpt_e60.pt', 'ema_checkpt_e60.pt')
+diff.log_images(60)
