@@ -128,9 +128,9 @@ class Diffusion:
         if train: self.model.train()
         else: self.model.eval()
         if train:
-            pbar = progress_bar(self.train_dataloader)
+            pbar = self.train_dataloader
         else:
-            pbar = progress_bar(self.val_dataloader)
+            pbar = self.val_dataloader
         # if train:
         #     batches = len(self.train_dataloader)
         #     stop = int(batches)

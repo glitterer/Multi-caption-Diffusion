@@ -76,4 +76,5 @@ def get_val_data(batchsize:int):
         transforms.ToTensor()
     ])
     val_dataset = cifar_dataset(cwd + 'val_cifar.json',cwd + 'test', transform=val_transforms)
-    val_dataset = DataLoader(val_dataset, batch_size=batchsize, shuffle=True)
+    val_dataloader = DataLoader(val_dataset, batch_size=batchsize, shuffle=True)
+    return val_dataloader
