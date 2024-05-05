@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name="cifar_1"
+#SBATCH --job-name="clip"
 #SBATCH --partition=gpus
 #SBATCH --mem=120G
 #SBATCH --cpus-per-task=4
