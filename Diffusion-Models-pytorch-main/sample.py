@@ -9,10 +9,10 @@ from ddpm_conditional import Diffusion
 config = SimpleNamespace(    
     run_name = "text_con_ddpm",
     epochs = 40,
-    noise_steps=600,
+    noise_steps=1000,
     seed = 42,
-    batch_size = 48,
-    img_size = 128,
+    batch_size = 32,
+    img_size = 32,
     text_embed_length = 256,
     train_folder = "train",
     val_folder = "test",
@@ -24,10 +24,10 @@ config = SimpleNamespace(
     num_workers=10,
     lr = 5e-3)
 
-diff = Diffusion(noise_steps=config.noise_steps , img_size1=config.img_size, img_size2=config.img_size)
+diff = Diffusion(noise_steps=config.noise_steps , img_size1=config.img_size, img_size2=config.img_size, num_class=10)
 
 # diff.load('/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/models/text_con_diff', 'uncon_checkpt_e36.pt', 'uncon_ema_checkpt_e36.pt')
 # diff.log_images(0)
 
-diff.load('/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/models/text_con_diff', 'checkpt_e16.pt', 'ema_checkpt_e16.pt')
+diff.load('/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/Multi-caption-Diffusion/Diffusion-Models-pytorch-main/models/text_con_diff', 'checkpt_e70.pt', 'ema_checkpt_e70.pt')
 diff.log_images(5)

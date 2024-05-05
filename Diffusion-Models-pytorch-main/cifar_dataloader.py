@@ -64,10 +64,7 @@ class cifar_dataset(Dataset):
 
 def get_train_data(batchsize:int):
     train_transforms = transforms.Compose([
-        transforms.Resize(32 + int(.25*32)),  # args.img_size + 1/4 *args.img_size
-        transforms.RandomResizedCrop(32, scale=(0.8, 1.0)),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+        transforms.ToTensor()
     ])
     train_dataset = cifar_dataset(cwd + 'train_cifar.json',cwd + 'train', transform=train_transforms)
     train_dataloader = DataLoader(train_dataset, batch_size=batchsize, shuffle=True)
@@ -76,9 +73,7 @@ def get_train_data(batchsize:int):
 
 def get_val_data(batchsize:int):
     val_transforms = transforms.Compose([
-        transforms.Resize(32),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+        transforms.ToTensor()
     ])
     val_dataset = cifar_dataset(cwd + 'val_cifar.json',cwd + 'test', transform=val_transforms)
     val_dataset = DataLoader(val_dataset, batch_size=batchsize, shuffle=True)

@@ -8,13 +8,13 @@ from ddpm_conditional import Diffusion
 # text_clip_1 = text -> 256, class -> 256, text + class
 # text_clip_2 = text -> 256, class -> 256, cat(text,cat) -> 512, cat -> 256
 config = SimpleNamespace(    
-    run_name = "text_clip_2_diff",
-    epochs = 80,
+    run_name = "cifar_base",
+    epochs = 300,
     noise_steps=1000,
     seed = 42,
-    batch_size = 64,
+    batch_size = 160,
     img_size = 32,
-    num_classes = 10,
+    text_embed_length = 256,
     train_folder = "train",
     val_folder = "test",
     device = "cuda",
@@ -23,9 +23,10 @@ config = SimpleNamespace(
     fp16 = True,
     log_every_epoch = 10,
     num_workers=10,
+    num_classes=10,
     lr = 5e-3)
 
-diff = Diffusion(noise_steps=config.noise_steps , img_size1=config.img_size, img_size2=config.img_size, num_class=config.num_classes)
+diff = Diffusion(noise_steps=1000, img_size1=32, img_size2=32, num_class=10)
 
 diff.prepare(config)
 diff.fit(config)

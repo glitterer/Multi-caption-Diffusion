@@ -25,11 +25,11 @@ from cifar_dataloader import get_train_data, get_val_data
 
 
 config = SimpleNamespace(    
-    run_name = "text_clip_2",
-    epochs = 80,
+    run_name = "cifar_base",
+    epochs = 300,
     noise_steps=1000,
     seed = 42,
-    batch_size = 64,
+    batch_size = 160,
     img_size = 32,
     text_embed_length = 256,
     train_folder = "train",
@@ -48,7 +48,7 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=log
 
 
 class Diffusion:
-    def __init__(self, noise_steps=50, beta_start=1e-4, beta_end=0.02, img_size1=32, img_size2=32, text_embed_length=256, c_in=3, c_out=3, device="cuda", num_class=1, **kwargs):
+    def __init__(self, noise_steps=1000, beta_start=1e-4, beta_end=0.02, img_size1=32, img_size2=32, text_embed_length=256, c_in=3, c_out=3, device="cuda", num_class=10, **kwargs):
         self.noise_steps = noise_steps
         self.beta_start = beta_start
         self.beta_end = beta_end
@@ -56,7 +56,7 @@ class Diffusion:
         self.beta = self.prepare_noise_schedule().to(device)
         self.alpha = 1. - self.beta
         self.alpha_hat = torch.cumprod(self.alpha, dim=0)
-        self.cap_reduce = torch.nn.Sequential(torch.nn.Linear(512, 256), torch.nn.LeakyReLU()).to(device)
+        # self.cap_reduce = torch.nn.Sequential(torch.nn.Linear(512, 256), torch.nn.LeakyReLU()).to(device)
         self.img_size1 = img_size1
         self.img_size2 = img_size2
         self.model = UNet_conditional(c_in, c_out, text_embed_length = text_embed_length, **kwargs).to(device)
@@ -65,7 +65,7 @@ class Diffusion:
         self.c_in = c_in
         self.text_embed_length = text_embed_length
         self.num_class = num_class
-        self.combine_emb = torch.nn.Sequential(torch.nn.Linear(512, 256), torch.nn.LeakyReLU()).to(device)
+        # self.combine_emb = torch.nn.Sequential(torch.nn.Linear(512, 256), torch.nn.LeakyReLU()).to(device)
         self.label_emb = nn.Embedding(num_class, text_embed_length).to(self.device)
         # self.cap_enc = clip_text_embedding
 
@@ -86,13 +86,16 @@ class Diffusion:
         return noisy_img, Ɛ
     
     @torch.inference_mode()
-    def sample(self, use_ema, labels, cfg_scale=0):
+    def sample(self, use_ema, labels, cfg_scale=3):
         model = self.ema_model if use_ema else self.model
         n = len(labels)
+        print(self.img_size1)
+        print(labels)
         logging.info(f"Sampling {n} new images....")
         model.eval()
         with torch.inference_mode():
-            labels = self.cap_reduce(labels).reshape((1,256)).to(self.device)
+            # labels = self.cap_reduce(labels).reshape((1,256)).to(self.device)
+            labels = self.label_emb(labels)
             x = torch.randn((n, self.c_in, self.img_size1, self.img_size2)).to(self.device)
             for i in progress_bar(reversed(range(1, self.noise_steps)), total=self.noise_steps-1, leave=False):
                 t = (torch.ones(n) * i).long().to(self.device)
@@ -124,7 +127,10 @@ class Diffusion:
         avg_loss = 0.
         if train: self.model.train()
         else: self.model.eval()
-        pbar = progress_bar(self.train_dataloader)
+        if train:
+            pbar = progress_bar(self.train_dataloader)
+        else:
+            pbar = progress_bar(self.val_dataloader)
         # if train:
         #     batches = len(self.train_dataloader)
         #     stop = int(batches)
@@ -136,18 +142,18 @@ class Diffusion:
             with torch.autocast("cuda") and (torch.inference_mode() if not train else torch.enable_grad()):
                 
                 images = images.type(torch.FloatTensor).to(self.device)
-                labels = labels.to(self.device)
+                # labels = labels.to(self.device)
                 classes = classes.to(self.device)
                 classes = self.label_emb(classes)
-                labels = self.cap_reduce(labels)
-                labels = torch.cat([labels, classes], 1)
-                labels = self.combine_emb(labels)
+                # labels = self.cap_reduce(labels)
+                # labels = torch.cat([labels, classes], 1)
+                # labels = self.combine_emb(labels)
                 t = self.sample_timesteps(images.shape[0]).to(self.device)
                 
                 x_t, noise = self.noise_images(images, t)
                 if np.random.random() < 0.15:
-                    labels = None
-                predicted_noise = self.model(x_t, t, labels)
+                    classes = None
+                predicted_noise = self.model(x_t, t, classes)
                 loss: torch.Tensor = self.mse(noise, predicted_noise)
                 avg_loss += loss.cpu().detach()
             if train:
@@ -168,23 +174,25 @@ class Diffusion:
 
     def log_images(self, epoch):
         "Log images to save them to disk"
-        labels1 = self.cap_enc(['Cow on the beach']).type(torch.float32).to(self.device)
-        labels = torch.stack([labels1])
+        # labels1 = self.cap_enc(['black car']).type(torch.float32).to(self.device)
+        labels = torch.arange(self.num_class).long().to(self.device)
+        # labels = torch.stack([labels1])
         sampled_images = self.sample(use_ema=False, labels=labels)
         sampled_images = sampled_images.permute((0, 2, 3, 1))
         sampled_images = sampled_images.cpu().detach().numpy()
-        plt.imsave(f'img1_e{epoch}_full.png', sampled_images[0])
+        for i in range(len(sampled_images)):
+            plt.imsave(f'img{i}_e{epoch}_full.png', sampled_images[i])
         
 
-    def load(self, model_cpkt_path, model_ckpt="checkpt_e6.pt", ema_model_ckpt="ema_checkpt_e6.pt"):
+    def load(self, model_cpkt_path, model_ckpt="checkpt_e70.pt", ema_model_ckpt="ema_checkpt_e70.pt"):
         self.model.load_state_dict(torch.load(os.path.join(model_cpkt_path, model_ckpt)))
         self.ema_model.load_state_dict(torch.load(os.path.join(model_cpkt_path, ema_model_ckpt)))
 
     def save_model(self, run_name, epoch=-1):
         "Save model locally"
-        torch.save(self.model.state_dict(), os.path.join("models", run_name, f"checkpt_e{epoch}.pt"))
-        torch.save(self.ema_model.state_dict(), os.path.join("models", run_name, f"ema_checkpt_e{epoch}.pt"))
-        torch.save(self.optimizer.state_dict(), os.path.join("models", run_name, f"optim_e{epoch}.pt"))
+        torch.save(self.model.state_dict(), os.path.join("cifar_base_models", run_name, f"checkpt_e{epoch}.pt"))
+        torch.save(self.ema_model.state_dict(), os.path.join("cifar_base_models", run_name, f"ema_checkpt_e{epoch}.pt"))
+        torch.save(self.optimizer.state_dict(), os.path.join("cifar_base_models", run_name, f"optim_e{epoch}.pt"))
         
 
     def prepare(self, args):
@@ -210,7 +218,7 @@ class Diffusion:
             
             
             # self.log_images(epoch)
-            if epoch%5 == 0:
+            if epoch%10 == 0:
                 self.save_model(run_name=args.run_name, epoch=epoch)
 
         # save model
