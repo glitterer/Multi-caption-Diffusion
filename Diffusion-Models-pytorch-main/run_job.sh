@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name="test"
+#SBATCH --job-name="cifar1"
 #SBATCH --partition=gpus
 #SBATCH --mem=120G
 #SBATCH --cpus-per-task=4

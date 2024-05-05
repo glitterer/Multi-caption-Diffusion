@@ -28,5 +28,6 @@ config = SimpleNamespace(
 
 diff = Diffusion(noise_steps=1000, img_size1=32, img_size2=32, num_class=10)
 
+# diff.load('/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/cifar_models/cifar_base', 'checkpt_e60.pt', 'ema_checkpt_e60.pt')
 diff.prepare(config)
 diff.fit(config)

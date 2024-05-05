@@ -25,7 +25,7 @@ from cifar_dataloader import get_train_data, get_val_data
 
 
 config = SimpleNamespace(    
-    run_name = "class",
+    run_name = "cifar1",
     epochs = 300,
     noise_steps=1000,
     seed = 42,
@@ -56,7 +56,7 @@ class Diffusion:
         self.beta = self.prepare_noise_schedule().to(device)
         self.alpha = 1. - self.beta
         self.alpha_hat = torch.cumprod(self.alpha, dim=0)
-        # self.cap_reduce = torch.nn.Sequential(torch.nn.Linear(512, 256), torch.nn.LeakyReLU()).to(device)
+        
         self.img_size1 = img_size1
         self.img_size2 = img_size2
         self.model = UNet_conditional(c_in, c_out, text_embed_length = text_embed_length, **kwargs).to(device)
@@ -65,8 +65,7 @@ class Diffusion:
         self.c_in = c_in
         self.text_embed_length = text_embed_length
         self.num_class = num_class
-        # self.combine_emb = torch.nn.Sequential(torch.nn.Linear(512, 256), torch.nn.LeakyReLU()).to(device)
-        self.label_emb = nn.Embedding(num_class, text_embed_length).to(self.device)
+        
         # self.cap_enc = clip_text_embedding
 
     def prepare_noise_schedule(self):
@@ -94,8 +93,8 @@ class Diffusion:
         logging.info(f"Sampling {n} new images....")
         model.eval()
         with torch.inference_mode():
-            # labels = self.cap_reduce(labels).reshape((1,256)).to(self.device)
-            # labels = self.label_emb(labels)
+            labels = self.cap_reduce(labels).reshape((1,256)).to(self.device)
+            labels = self.label_emb(labels)
             labels = labels.to(self.device)
             labels = self.label_emb(labels).to(self.device)
             x = torch.randn((n, self.c_in, self.img_size1, self.img_size2)).to(self.device)
@@ -144,9 +143,8 @@ class Diffusion:
             with torch.autocast("cuda") and (torch.inference_mode() if not train else torch.enable_grad()):
                 
                 images = images.type(torch.FloatTensor).to(self.device)
-                # labels = labels.to(self.device)
+                labels = labels.to(self.device)
                 classes = classes.to(self.device)
-                classes = self.label_emb(classes)
                 # labels = self.cap_reduce(labels)
                 # labels = torch.cat([labels, classes], 1)
                 # labels = self.combine_emb(labels)
@@ -158,7 +156,8 @@ class Diffusion:
                 x_t, noise = self.noise_images(images, t)
                 if np.random.random() < 0.15:
                     classes = None
-                predicted_noise = self.model(x_t, t, classes)
+                    labels = None
+                predicted_noise = self.model(x_t, t, classes, labels)
                 loss: torch.Tensor = self.mse(noise, predicted_noise)
                 avg_loss += loss.cpu().detach()
             if train:
@@ -195,9 +194,9 @@ class Diffusion:
 
     def save_model(self, run_name, epoch=-1):
         "Save model locally"
-        torch.save(self.model.state_dict(), os.path.join("cifar_class_models", run_name, f"checkpt_class.pt"))
-        torch.save(self.ema_model.state_dict(), os.path.join("cifar_class_models", run_name, f"ema_checkpt_class.pt"))
-        torch.save(self.optimizer.state_dict(), os.path.join("cifar_class_models", run_name, f"optim_class.pt"))
+        torch.save(self.model.state_dict(), os.path.join("last_models", run_name, f"checkpt_1.pt"))
+        torch.save(self.ema_model.state_dict(), os.path.join("last_models", run_name, f"ema_checkpt_1.pt"))
+        torch.save(self.optimizer.state_dict(), os.path.join("last_models", run_name, f"optim_1.pt"))
         
 
     def prepare(self, args):

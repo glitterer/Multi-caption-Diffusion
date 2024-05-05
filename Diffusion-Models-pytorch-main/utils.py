@@ -50,9 +50,9 @@ def save_images(images, path, **kwargs):
 
 
 def mk_folders(run_name):
-    os.makedirs("cifar_class_models", exist_ok=True)
+    os.makedirs("last_models", exist_ok=True)
     os.makedirs("results", exist_ok=True)
-    os.makedirs(os.path.join("cifar_class_models", run_name), exist_ok=True)
+    os.makedirs(os.path.join("last_models", run_name), exist_ok=True)
     os.makedirs(os.path.join("results", run_name), exist_ok=True)
 
 def create_embed_json(path:str, json_name:str):
