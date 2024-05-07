@@ -26,8 +26,8 @@ config = SimpleNamespace(
 
 diff = Diffusion(noise_steps=config.noise_steps , img_size1=config.img_size, img_size2=config.img_size, num_class=10)
 
-# diff.load('/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/models/text_con_diff', 'uncon_checkpt_e36.pt', 'uncon_ema_checkpt_e36.pt')
-# diff.log_images(0)
+diff.load('/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/test', 'checkpt_class.pt', 'ema_checkpt_class.pt')
+diff.log_images(160)
 
-diff.load('/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/cifar_models/cifar_base', 'checkpt_e60.pt', 'ema_checkpt_e60.pt')
-diff.log_images(60)
+# diff.load('/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/test', 'checkpt_2.pt', 'ema_checkpt_2.pt')
+# diff.generate_fid_score()

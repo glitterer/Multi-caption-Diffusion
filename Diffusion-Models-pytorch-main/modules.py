@@ -203,7 +203,7 @@ class UNet_conditional(UNet):
     def __init__(self, c_in=3, c_out=3, time_dim=256, text_embed_length=None, max_embed=100, **kwargs):
         super().__init__(c_in, c_out, time_dim, **kwargs)
         # self.combine_emb = torch.nn.Sequential(torch.nn.Linear(512, 256), torch.nn.LeakyReLU())
-        self.label_emb = nn.Embedding(10, text_embed_length)
+        self.label_emb = nn.Embedding(10, time_dim)
         # self.cap_reduce = torch.nn.Sequential(torch.nn.Linear(512, 256), torch.nn.LeakyReLU())
 
     # P(x|t,y)_ x:image, t: time embedding, y: caption embedding

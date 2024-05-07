@@ -11,8 +11,8 @@ from PIL import Image
 
 
 
-# cwd = '/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/data/cifar10/cifar10/'
-cwd = '/home/rdemello/cifar10/cifar10/'
+cwd = '/mnt/c/Users/rdeme/Documents/Brown/CSCI_2470_Deep_Learning/project/data/cifar10/cifar10/'
+# cwd = '/home/rdemello/cifar10/cifar10/'
 
 class cifar_dataset(Dataset):
     def __init__(self, json_file, root_dir, transform=None):

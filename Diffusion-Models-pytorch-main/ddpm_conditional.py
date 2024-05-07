@@ -22,6 +22,7 @@ from utils import *
 from modules import UNet_conditional, EMA
 # from coco_dataloader import get_train_data, get_val_data
 from cifar_dataloader import get_train_data, get_val_data
+from torchmetrics.image.fid import FrechetInceptionDistance
 
 
 config = SimpleNamespace(    
@@ -65,14 +66,23 @@ class Diffusion:
         self.c_in = c_in
         self.text_embed_length = text_embed_length
         self.num_class = num_class
-        
-        # self.cap_enc = clip_text_embedding
+        self.fid = FrechetInceptionDistance().to(device)
+        self.cap_enc = clip_text_embedding
 
     def prepare_noise_schedule(self):
         return torch.linspace(self.beta_start, self.beta_end, self.noise_steps)
     
     def sample_timesteps(self, n):
         return torch.randint(low=1, high=self.noise_steps, size=(n,))
+    
+    def compute_fid(self):
+        #fid computation
+        return self.fid.compute().item()
+    
+    def update_fid(self, real_images, generated_images):
+        #Update FID metric with new set of images
+        self.fid.update(real_images, real=True)
+        self.fid.update(generated_images, real=False)
 
     def noise_images(self, x, t):
         "Add noise to images at instant t"
@@ -85,24 +95,22 @@ class Diffusion:
         return noisy_img, Ɛ
     
     @torch.inference_mode()
-    def sample(self, use_ema, labels, cfg_scale=3):
+    def sample(self, use_ema, labels, classes, cfg_scale=3):
         model = self.ema_model if use_ema else self.model
         n = len(labels)
-        print(self.img_size1)
-        print(labels)
         logging.info(f"Sampling {n} new images....")
         model.eval()
         with torch.inference_mode():
-            labels = self.cap_reduce(labels).reshape((1,256)).to(self.device)
-            labels = self.label_emb(labels)
-            labels = labels.to(self.device)
-            labels = self.label_emb(labels).to(self.device)
+            # labels = self.cap_reduce(labels).reshape((1,256)).to(self.device)
+            # labels = self.label_emb(labels)
+            # labels = labels.to(self.device)
+            # labels = self.label_emb(labels).to(self.device)
             x = torch.randn((n, self.c_in, self.img_size1, self.img_size2)).to(self.device)
             for i in progress_bar(reversed(range(1, self.noise_steps)), total=self.noise_steps-1, leave=False):
                 t = (torch.ones(n) * i).long().to(self.device)
-                predicted_noise = model(x, t, labels)
+                predicted_noise = model(x, t, classes, labels)
                 if cfg_scale > 0:
-                    uncond_predicted_noise = model(x, t, None)
+                    uncond_predicted_noise = model(x, t, None, None)
                     predicted_noise = torch.lerp(uncond_predicted_noise, predicted_noise, cfg_scale)
                 alpha = self.alpha[t][:, None, None, None]
                 alpha_hat = self.alpha_hat[t][:, None, None, None]
@@ -112,10 +120,51 @@ class Diffusion:
                 else:
                     noise = torch.zeros_like(x)
                 x = 1 / torch.sqrt(alpha) * (x - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * predicted_noise) + torch.sqrt(beta) * noise
+                
         x = (x.clamp(-1, 1) + 1) / 2
         x = (x * 255).type(torch.uint8)
         return x
 
+    def generate_fid_score(self, cfg_scale=3):
+        model = self.model
+        model.eval()
+        with torch.inference_mode():
+            # labels = self.cap_reduce(labels).reshape((1,256)).to(self.device)
+            # labels = self.label_emb(labels)
+            # labels = labels.to(self.device)
+            # labels = self.label_emb(labels).to(self.device)
+            data = get_val_data(64)
+            
+            for i, (images, classes, labels) in enumerate(data):
+                images = images.type(torch.FloatTensor).to(self.device)
+                labels = labels.to(self.device)
+                classes = classes.to(self.device)
+                n = images.shape[0]
+                x,_ = self.noise_images(images, torch.tensor([self.noise_steps-1]).long())
+                
+                for i in progress_bar(reversed(range(1, self.noise_steps)), total=self.noise_steps-1, leave=False):
+                    t = (torch.ones(n) * i).long().to(self.device)
+                    predicted_noise = model(x, t, classes, labels)
+                    if cfg_scale > 0:
+                        uncond_predicted_noise = model(x, t, None, None)
+                        predicted_noise = torch.lerp(uncond_predicted_noise, predicted_noise, cfg_scale)
+                    alpha = self.alpha[t][:, None, None, None]
+                    alpha_hat = self.alpha_hat[t][:, None, None, None]
+                    beta = self.beta[t][:, None, None, None]
+                    if i > 1:
+                        noise = torch.randn_like(x)
+                    else:
+                        noise = torch.zeros_like(x)
+                    x = 1 / torch.sqrt(alpha) * (x - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * predicted_noise) + torch.sqrt(beta) * noise
+                    # x = 1 / torch.sqrt(alpha) * (x - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * predicted_noise)
+                x = (x.clamp(-1, 1) + 1) / 2
+                x = torch.tensor(x * 255).type(torch.uint8)
+                images = torch.tensor(images * 255).type(torch.uint8)
+                self.update_fid(images, x)
+                break
+            score = self.compute_fid()
+            print("FID score: " + str(score/64))
+    
     def train_step(self, loss):
         self.optimizer.zero_grad()
         self.scaler.scale(loss).backward()
@@ -178,10 +227,10 @@ class Diffusion:
 
     def log_images(self, epoch):
         "Log images to save them to disk"
-        # labels1 = self.cap_enc(['black car']).type(torch.float32).to(self.device)
+        captions = self.cap_enc(['airplane', 'blue', 'eagle', 'orange cat', 'baby deer', 'small dog', 'frog on grass', 'brown horse', 'ship on water', 'red truck']).type(torch.float32).to(self.device)
         labels = torch.arange(self.num_class).long().to(self.device)
         # labels = torch.stack([labels1])
-        sampled_images = self.sample(use_ema=False, labels=labels)
+        sampled_images = self.sample(use_ema=False, labels=captions, classes=labels)
         sampled_images = sampled_images.permute((0, 2, 3, 1))
         sampled_images = sampled_images.cpu().detach().numpy()
         for i in range(len(sampled_images)):
